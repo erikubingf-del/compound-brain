@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -12,15 +13,31 @@ from pathlib import Path
 try:
     from scripts.lib.activation_registry import ActivationRegistry
     from scripts.lib.audit_packet import build_audit_packet
+    from scripts.lib.repo_preview_cache import RepoPreviewCache
     from scripts.materialize_project_claude import materialize_project_claude
 except ModuleNotFoundError:
     from lib.activation_registry import ActivationRegistry
     from lib.audit_packet import build_audit_packet
+    from lib.repo_preview_cache import RepoPreviewCache
     from materialize_project_claude import materialize_project_claude
 
 
-REGISTRY_PATH = Path.home() / ".claude" / "registry" / "activated-projects.json"
 SCRIPT_DIR = Path(__file__).resolve().parent
+
+
+def claude_home_dir() -> Path:
+    override = os.environ.get("COMPOUND_BRAIN_HOME")
+    if override:
+        return Path(override)
+    return Path.home() / ".claude"
+
+
+def activation_registry_path() -> Path:
+    return claude_home_dir() / "registry" / "activated-projects.json"
+
+
+def preview_cache_path() -> Path:
+    return claude_home_dir() / "registry" / "repo-previews.json"
 
 
 def detect_git_root(project_dir: Path) -> Path:
@@ -101,6 +118,19 @@ def detect_package_manager(project_dir: Path) -> str:
     return "unknown"
 
 
+def detect_last_commit(project_dir: Path) -> str:
+    result = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        capture_output=True,
+        text=True,
+        check=False,
+        cwd=str(project_dir),
+    )
+    if result.returncode != 0:
+        return "unknown"
+    return result.stdout.strip()
+
+
 def summarize(project_dir: Path) -> dict[str, object]:
     repo_root = detect_git_root(project_dir)
     repo_name = detect_repo_name(project_dir, repo_root)
@@ -111,9 +141,10 @@ def summarize(project_dir: Path) -> dict[str, object]:
         "docs": detect_docs(repo_root),
         "tests": detect_test_surface(repo_root),
         "package_manager": detect_package_manager(repo_root),
+        "last_commit": detect_last_commit(repo_root),
         "has_brain": (repo_root / ".brain").exists(),
         "has_local_claude": (repo_root / ".claude").exists(),
-        "next_state": "preflight-complete",
+        "next_state": "observe-complete",
     }
 
 
@@ -121,15 +152,15 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=(
-            "Activate an opted-in repo: run preflight, infer an initial control "
-            "plane, and register it for the compound-brain activation lifecycle."
+            "Preview or activate an opted-in repo for the compound-brain "
+            "observe/preview/prepare/activate lifecycle."
         ),
         epilog=(
             "Lifecycle:\n"
-            "  1. preflight   detect repo, stack, docs, tests, and current surfaces\n"
-            "  2. audit seed  infer starter departments and strategic confirmations\n"
-            "  3. materialize scaffold .brain and repo-local .claude control surfaces\n"
-            "  4. go live     hand off to audit, confirmation, and scheduled loops"
+            "  1. observe     detect repo, stack, docs, tests, and current surfaces\n"
+            "  2. preview     cache a read-only global recommendation\n"
+            "  3. prepare     write CLAUDE.md, .brain, and .codex/AGENTS.md\n"
+            "  4. activate    add repo-local .claude, departments, and runtime state"
         ),
     )
     parser.add_argument("--project-dir", default=".", help="Repo path to inspect")
@@ -156,6 +187,25 @@ def ensure_brain(repo_root: Path, repo_name: str) -> None:
     )
 
 
+def build_preview_record(summary: dict[str, object], packet: dict[str, object]) -> dict[str, object]:
+    next_actions = [
+        action["title"]
+        for action in packet.get("candidate_actions", [])
+        if isinstance(action, dict) and "title" in action
+    ]
+    cache = RepoPreviewCache(preview_cache_path())
+    return cache.upsert_preview(
+        repo_path=str(summary["repo_path"]),
+        repo_name=str(summary["repo_name"]),
+        inferred_goal=str(packet["project_goal_candidates"][0]),
+        departments=list(packet["departments"]),
+        risks=list(packet.get("risks", [])),
+        next_actions=next_actions,
+        confidence=0.78,
+        last_commit=str(summary["last_commit"]),
+    )
+
+
 def main() -> int:
     args = build_parser().parse_args()
     try:
@@ -164,19 +214,25 @@ def main() -> int:
         print(f"[activate-repo] {exc}", file=sys.stderr)
         return 1
 
-    if not args.check_only:
-        packet = build_audit_packet(
-            repo_name=str(summary["repo_name"]),
-            tech_stack=list(summary["stack"]),
-            docs_present=bool(summary["docs"]),
-            ci_present=(Path(summary["repo_path"]) / ".github" / "workflows").exists(),
-        )
+    packet = build_audit_packet(
+        repo_name=str(summary["repo_name"]),
+        tech_stack=list(summary["stack"]),
+        docs_present=bool(summary["docs"]),
+        ci_present=(Path(summary["repo_path"]) / ".github" / "workflows").exists(),
+    )
+    summary["preview_record"] = build_preview_record(summary, packet)
+    summary["departments"] = packet["departments"]
+    summary["project_goal_candidates"] = packet["project_goal_candidates"]
+
+    if args.check_only:
+        summary["next_state"] = "preview-ready"
+    else:
         repo_root = Path(summary["repo_path"])
         if not summary["has_brain"]:
             ensure_brain(repo_root, str(summary["repo_name"]))
         materialize_project_claude(repo_root, list(packet["departments"]))
 
-        registry = ActivationRegistry(REGISTRY_PATH)
+        registry = ActivationRegistry(activation_registry_path())
         summary["registry_record"] = registry.register_repo(
             repo_path=summary["repo_path"],
             repo_name=summary["repo_name"],
@@ -185,8 +241,6 @@ def main() -> int:
         )
         summary["has_brain"] = True
         summary["has_local_claude"] = True
-        summary["departments"] = packet["departments"]
-        summary["project_goal_candidates"] = packet["project_goal_candidates"]
         summary["next_state"] = "awaiting-strategic-confirmation"
 
     if args.json:
@@ -202,7 +256,10 @@ def main() -> int:
     print(f".brain present: {'yes' if summary['has_brain'] else 'no'}")
     print(f".claude present: {'yes' if summary['has_local_claude'] else 'no'}")
     if args.check_only:
-        print("next state: preflight complete")
+        print(f"preview goal: {summary['project_goal_candidates'][0]}")
+        print(f"proposed departments: {', '.join(summary['departments'])}")
+        print("recommended action: prepare-brain")
+        print("next state: preview ready")
     else:
         print(f"departments: {', '.join(summary['departments'])}")
         print("strategic confirmations: project goal, department goals, major architecture changes")

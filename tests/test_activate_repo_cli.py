@@ -11,5 +11,5 @@ class ActivateRepoCliTests(unittest.TestCase):
             check=False,
         )
 
-        self.assertIn("preflight", result.stdout.lower())
-        self.assertIn("materialize", result.stdout.lower())
+        self.assertIn("observe", result.stdout.lower())
+        self.assertIn("prepare", result.stdout.lower())
