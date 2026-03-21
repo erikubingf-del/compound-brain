@@ -1,8 +1,6 @@
-# Activate Repo Demo
+# Observe / Prepare / Activate Demo
 
-This example shows the intended activation flow for a single repo.
-
-## 1. Install the shared runtime
+## 1. Install the global orchestrator
 
 ```bash
 git clone https://github.com/your-username/compound-brain
@@ -10,31 +8,46 @@ cd compound-brain
 bash install.sh
 ```
 
-## 2. Run activation inside a repo
+## 2. Preview a repo without writing repo files
 
 ```bash
-cd /path/to/your/repo
-python3 ~/.claude/scripts/activate_repo.py --project-dir .
+python3 ~/.claude/scripts/activate_repo.py --project-dir /path/to/repo --check-only
 ```
 
-The command should:
-- run preflight
-- infer starter departments
-- scaffold `.brain/`
-- materialize repo-local `.claude/`
-- register the repo with the shared runtime
+This updates the global preview cache and prints:
+- inferred goal
+- proposed departments
+- recommended next action
 
-## 3. Review strategic confirmations
+## 3. Prepare static project memory
 
-Activation should surface:
-- project goal candidates
-- department goals
-- major architecture changes to confirm
+```bash
+python3 ~/.claude/scripts/prepare_brain.py /path/to/repo
+```
 
-## 4. Let the repo go live
+This writes:
+- `CLAUDE.md`
+- `.brain/`
+- `.codex/AGENTS.md`
 
-Once confirmed, the repo should have:
-- `.brain/` for persistent memory and state
-- `.claude/` for repo-local hooks and departments
-- ranked actions in `.brain/state/action-queue.md`
-- department-level action context in `.claude/departments/*.md`
+It does not write:
+- `.claude/`
+- department hooks
+- local cron/hook runtime
+
+## 4. Activate full repo autonomy
+
+```bash
+python3 ~/.claude/scripts/activate_repo.py --project-dir /path/to/repo
+```
+
+This adds:
+- `.claude/settings.local.json`
+- `.claude/departments/*.md`
+- `.claude/hooks/*.py`
+- `.brain/state/approval-state.json`
+- `.brain/state/departments/*.json`
+- `.brain/autoresearch/program.md`
+
+The repo now has bounded local autonomy, but strategic approvals still gate
+major direction changes.

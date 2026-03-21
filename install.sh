@@ -12,6 +12,7 @@ SCRIPTS_DIR="${BRAIN_DIR}/scripts"
 LIB_DIR="${SCRIPTS_DIR}/lib"
 REGISTRY_DIR="${BRAIN_DIR}/registry"
 TEMPLATES_DIR="${BRAIN_DIR}/templates/project_claude"
+CODEX_TEMPLATES_DIR="${BRAIN_DIR}/templates/project_codex"
 SETTINGS_FILE="${BRAIN_DIR}/settings.json"
 CONFIG_FILE="${BRAIN_DIR}/intelligence_projects.json"
 DRY_RUN=false
@@ -75,7 +76,7 @@ echo ""
 echo "────────────────────────────────────────────"
 echo "  compound-brain installer"
 echo "  Installing to: $BRAIN_DIR"
-echo "  Primary workflow: activate-repo"
+echo "  Lifecycle: observe -> preview -> prepare -> activate"
 echo "────────────────────────────────────────────"
 echo ""
 
@@ -91,11 +92,14 @@ for dir in \
   "$KNOWLEDGE_DIR/decisions" \
   "$KNOWLEDGE_DIR/skills" \
   "$KNOWLEDGE_DIR/qmp" \
+  "$KNOWLEDGE_DIR/promotions" \
   "$REGISTRY_DIR" \
   "$SCRIPTS_DIR" \
   "$LIB_DIR" \
   "$TEMPLATES_DIR/hooks" \
   "$TEMPLATES_DIR/departments" \
+  "$TEMPLATES_DIR/autoresearch" \
+  "$CODEX_TEMPLATES_DIR" \
   "${BRAIN_DIR}/hooks"
 do
   run "mkdir -p \"$dir\""
@@ -109,6 +113,7 @@ SCRIPTS=(
   "activate_repo.py"
   "architecture_radar.py"
   "materialize_project_claude.py"
+  "prepare_brain.py"
   "project_intelligence.py"
   "global_intelligence_sweeper.py"
   "intelligence_brief_hook.py"
@@ -142,12 +147,21 @@ done
 for template_file in "${REPO_DIR}/templates/project_claude/"*.md \
                       "${REPO_DIR}/templates/project_claude/"*.json \
                       "${REPO_DIR}/templates/project_claude/hooks/"*.py \
-                      "${REPO_DIR}/templates/project_claude/departments/"*.md; do
+                      "${REPO_DIR}/templates/project_claude/departments/"*.md \
+                      "${REPO_DIR}/templates/project_claude/autoresearch/"*.md; do
   [[ -f "$template_file" ]] || continue
   rel_path="${template_file#${REPO_DIR}/templates/project_claude/}"
   run "mkdir -p \"$(dirname "${TEMPLATES_DIR}/${rel_path}")\""
   run "cp \"$template_file\" \"${TEMPLATES_DIR}/${rel_path}\""
   ok "Installed template: $rel_path"
+done
+
+for template_file in "${REPO_DIR}/templates/project_codex/"*.md; do
+  [[ -f "$template_file" ]] || continue
+  rel_path="${template_file#${REPO_DIR}/templates/project_codex/}"
+  run "mkdir -p \"$(dirname "${CODEX_TEMPLATES_DIR}/${rel_path}")\""
+  run "cp \"$template_file\" \"${CODEX_TEMPLATES_DIR}/${rel_path}\""
+  ok "Installed Codex template: $rel_path"
 done
 
 # ─── Step 3: Seed knowledge base ─────────────────────────────────────────────
@@ -385,16 +399,16 @@ echo "────────────────────────�
 echo ""
 echo "  Next steps:"
 echo ""
-echo "  1. Activate a repo:"
+echo "  1. Preview a repo without writing repo files:"
+echo "     ${PYTHON_BIN} ${SCRIPTS_DIR}/activate_repo.py --project-dir /path/to/your/project --check-only"
+echo ""
+echo "  2. Prepare static project memory:"
+echo "     ${PYTHON_BIN} ${SCRIPTS_DIR}/prepare_brain.py /path/to/your/project"
+echo ""
+echo "  3. Activate full repo autonomy:"
 echo "     ${PYTHON_BIN} ${SCRIPTS_DIR}/activate_repo.py --project-dir /path/to/your/project"
 echo ""
-echo "  2. Materialize repo-local control surfaces when needed:"
-echo "     ${PYTHON_BIN} ${SCRIPTS_DIR}/materialize_project_claude.py"
-echo ""
-echo "  3. Run the initial project audit:"
-echo "     ${PYTHON_BIN} ${SCRIPTS_DIR}/project_auditor.py --project-dir /path/to/your/project"
-echo ""
-echo "  4. Open Claude Code in your project — the shared runtime and repo-local hooks will surface the brief:"
+echo "  4. Open Claude Code in your project after activation:"
 echo "     cd /path/to/your/project && claude"
 echo ""
 echo "  Shared cron runs every 6h. Next run: $(date -d '+6 hours' '+%H:%M' 2>/dev/null || date -v+6H '+%H:%M')"
