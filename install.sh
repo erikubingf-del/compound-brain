@@ -11,6 +11,7 @@ KNOWLEDGE_DIR="${BRAIN_DIR}/knowledge"
 SCRIPTS_DIR="${BRAIN_DIR}/scripts"
 LIB_DIR="${SCRIPTS_DIR}/lib"
 REGISTRY_DIR="${BRAIN_DIR}/registry"
+TEMPLATES_DIR="${BRAIN_DIR}/templates/project_claude"
 SETTINGS_FILE="${BRAIN_DIR}/settings.json"
 CONFIG_FILE="${BRAIN_DIR}/intelligence_projects.json"
 DRY_RUN=false
@@ -93,6 +94,8 @@ for dir in \
   "$REGISTRY_DIR" \
   "$SCRIPTS_DIR" \
   "$LIB_DIR" \
+  "$TEMPLATES_DIR/hooks" \
+  "$TEMPLATES_DIR/departments" \
   "${BRAIN_DIR}/hooks"
 do
   run "mkdir -p \"$dir\""
@@ -104,11 +107,13 @@ echo ""
 echo "[ 2/7 ] Installing scripts..."
 SCRIPTS=(
   "activate_repo.py"
+  "materialize_project_claude.py"
   "project_intelligence.py"
   "global_intelligence_sweeper.py"
   "intelligence_brief_hook.py"
   "project_auditor.py"
   "probability_engine.py"
+  "run_project_llm_cron.py"
   "github_intelligence.py"
   "setup_brain.sh"
   "nightly_review.sh"
@@ -131,6 +136,17 @@ for lib_file in "${REPO_DIR}/scripts/lib/"*.py; do
   fname=$(basename "$lib_file")
   run "cp \"$lib_file\" \"${LIB_DIR}/${fname}\""
   ok "Installed library: $fname"
+done
+
+for template_file in "${REPO_DIR}/templates/project_claude/"*.md \
+                      "${REPO_DIR}/templates/project_claude/"*.json \
+                      "${REPO_DIR}/templates/project_claude/hooks/"*.py \
+                      "${REPO_DIR}/templates/project_claude/departments/"*.md; do
+  [[ -f "$template_file" ]] || continue
+  rel_path="${template_file#${REPO_DIR}/templates/project_claude/}"
+  run "mkdir -p \"$(dirname "${TEMPLATES_DIR}/${rel_path}")\""
+  run "cp \"$template_file\" \"${TEMPLATES_DIR}/${rel_path}\""
+  ok "Installed template: $rel_path"
 done
 
 # ─── Step 3: Seed knowledge base ─────────────────────────────────────────────
@@ -237,10 +253,14 @@ echo "[ 4/7 ] Configuring Claude Code hooks..."
 HOOK_SCRIPT="${SCRIPTS_DIR}/intelligence_brief_hook.py"
 HEALTH_SCRIPT="${SCRIPTS_DIR}/universal_project_health.py"
 SESSION_END_SCRIPT="${SCRIPTS_DIR}/nightly_review.sh"
+PROJECT_CRON_SCRIPT="${SCRIPTS_DIR}/run_project_llm_cron.py"
 
 if [[ ! -f "$SETTINGS_FILE" ]]; then
   # Create fresh settings.json
-  cat > "$SETTINGS_FILE" <<EOF
+  if $DRY_RUN; then
+    echo "  [dry-run] write ${SETTINGS_FILE} with shared session hooks"
+  else
+    cat > "$SETTINGS_FILE" <<EOF
 {
   "hooks": {
     "SessionStart": [
@@ -273,7 +293,8 @@ if [[ ! -f "$SETTINGS_FILE" ]]; then
   }
 }
 EOF
-  ok "Created: settings.json with hooks"
+    ok "Created: settings.json with hooks"
+  fi
 else
   warn "settings.json already exists — add these hooks manually or check docs/HOOKS_GUIDE.md"
   warn "Hook to add to SessionStart:"
@@ -285,14 +306,18 @@ echo ""
 echo "[ 5/7 ] Setting up project registry..."
 
 if [[ ! -f "$CONFIG_FILE" ]]; then
-  cat > "$CONFIG_FILE" <<EOF
+  if $DRY_RUN; then
+    echo "  [dry-run] write ${CONFIG_FILE}"
+  else
+    cat > "$CONFIG_FILE" <<EOF
 {
   "auto_discover": true,
   "max_projects_per_run": 5,
   "projects": []
 }
 EOF
-  ok "Created: intelligence_projects.json (empty — add projects with: python3 ${SCRIPTS_DIR}/global_intelligence_sweeper.py --register /path/to/project)"
+    ok "Created: intelligence_projects.json (empty — add projects with: python3 ${SCRIPTS_DIR}/global_intelligence_sweeper.py --register /path/to/project)"
+  fi
 else
   warn "intelligence_projects.json already exists — skipping"
 fi
@@ -304,6 +329,10 @@ echo "[ 6/7 ] Setting up cron jobs..."
 install_cron() {
   local marker="$1"
   local entry="$2"
+  if $DRY_RUN; then
+    echo "  [dry-run] cron ${marker}: ${entry}"
+    return 0
+  fi
   if crontab -l 2>/dev/null | grep -q "$marker"; then
     warn "Cron already exists: $marker"
   else
@@ -314,6 +343,9 @@ install_cron() {
 
 install_cron "COMPOUND_GLOBAL_SWEEP" \
   "30 */6 * * * ${PYTHON_BIN} ${SCRIPTS_DIR}/global_intelligence_sweeper.py >> /tmp/compound_global_sweep.log 2>&1 # COMPOUND_GLOBAL_SWEEP"
+
+install_cron "COMPOUND_PROJECT_LLM_CRON" \
+  "0 */6 * * * ${PYTHON_BIN} ${PROJECT_CRON_SCRIPT} >> /tmp/compound_project_llm_cron.log 2>&1 # COMPOUND_PROJECT_LLM_CRON"
 
 install_cron "COMPOUND_GITHUB_INTEL" \
   "0 9 * * 0 ${PYTHON_BIN} ${SCRIPTS_DIR}/github_intelligence.py >> /tmp/compound_github_intel.log 2>&1 # COMPOUND_GITHUB_INTEL"
@@ -326,7 +358,10 @@ echo ""
 echo "[ 7/7 ] Finalizing..."
 
 # Create global gitignore pattern for .brain (optional - project-specific)
-cat > "${REPO_DIR}/.brain-gitignore-template" <<'EOF'
+if $DRY_RUN; then
+  echo "  [dry-run] write ${REPO_DIR}/.brain-gitignore-template"
+else
+  cat > "${REPO_DIR}/.brain-gitignore-template" <<'EOF'
 # Add to your project's .gitignore to keep brain files local:
 # .brain/memory/*.md     — sensitive session state
 # .brain/knowledge/daily/ — raw operational logs
@@ -338,7 +373,8 @@ cat > "${REPO_DIR}/.brain-gitignore-template" <<'EOF'
 # .brain/knowledge/qmp/
 # .brain/knowledge/skills/
 EOF
-ok "Created: .brain-gitignore-template"
+  ok "Created: .brain-gitignore-template"
+fi
 
 # ─── Done ────────────────────────────────────────────────────────────────────
 echo ""
@@ -348,17 +384,17 @@ echo "────────────────────────�
 echo ""
 echo "  Next steps:"
 echo ""
-echo "  1. Add a project brain:"
-echo "     bash ${SCRIPTS_DIR}/setup_brain.sh /path/to/your/project"
+echo "  1. Activate a repo:"
+echo "     ${PYTHON_BIN} ${SCRIPTS_DIR}/activate_repo.py --project-dir /path/to/your/project"
 echo ""
-echo "  2. Register it for intelligence sweeps:"
-echo "     ${PYTHON_BIN} ${SCRIPTS_DIR}/global_intelligence_sweeper.py --register /path/to/your/project"
+echo "  2. Materialize repo-local control surfaces when needed:"
+echo "     ${PYTHON_BIN} ${SCRIPTS_DIR}/materialize_project_claude.py"
 echo ""
 echo "  3. Run the initial project audit:"
 echo "     ${PYTHON_BIN} ${SCRIPTS_DIR}/project_auditor.py --project-dir /path/to/your/project"
 echo ""
-echo "  4. Open Claude Code in your project — the session hook will surface the brief:"
+echo "  4. Open Claude Code in your project — the shared runtime and repo-local hooks will surface the brief:"
 echo "     cd /path/to/your/project && claude"
 echo ""
-echo "  Global sweep runs every 6h. Next run: $(date -d '+6 hours' '+%H:%M' 2>/dev/null || date -v+6H '+%H:%M')"
+echo "  Shared cron runs every 6h. Next run: $(date -d '+6 hours' '+%H:%M' 2>/dev/null || date -v+6H '+%H:%M')"
 echo ""
