@@ -1,6 +1,6 @@
 # compound-brain
 
-**An autonomous, self-improving AI second brain for software projects.**
+**An activation-first, self-improving AI second brain for software repos.**
 
 Every project gets a living intelligence layer that audits, monitors, learns, and pushes agents toward the highest-probability path to success — automatically, around the clock.
 
@@ -36,7 +36,9 @@ Every project gets a living intelligence layer that audits, monitors, learns, an
 
 ## What this is
 
-compound-brain is a **meta-layer for software projects** that makes every repo self-aware, self-improving, and probability-driven.
+compound-brain is an **activation-first meta-layer for software projects**. You
+run one command inside a repo, it scaffolds the repo's memory and local control
+plane, and that repo becomes goal-driven, auditable, and continuously improved.
 
 It combines:
 - **PARA knowledge system** (Tiago Forte) — Projects, Areas, Resources, Archives
@@ -75,11 +77,11 @@ git clone https://github.com/yourusername/compound-brain
 cd compound-brain
 bash install.sh
 
-# Add a project brain to any existing repo
-bash scripts/setup_brain.sh /path/to/your/project "My Project Description"
+# Activate any existing repo
+python3 ~/.claude/scripts/activate_repo.py --project-dir /path/to/your/project
 
 # Verify
-python3 scripts/project_intelligence.py --project-dir /path/to/your/project --dry-run
+python3 scripts/activate_repo.py --project-dir /path/to/your/project --check-only
 ```
 
 ---
@@ -89,7 +91,8 @@ python3 scripts/project_intelligence.py --project-dir /path/to/your/project --dr
 | Layer | What it does | How it runs |
 |---|---|---|
 | **Global brain** | Cross-project PARA memory, decisions, skills | Always present at `~/.claude/knowledge/` |
-| **Project brain** | Per-project `.brain/` with PARA + memory | Created on first use via `setup_brain.sh` |
+| **Project brain** | Per-project `.brain/` with PARA + memory | Created during repo activation |
+| **Repo-local runtime** | `.claude/` hooks and departments | Created during repo activation |
 | **Intelligence cron** | LLM briefings every 6h, per-project and global | System crontab |
 | **Session hooks** | Pre-computed briefs surface at session start | Claude Code `settings.json` |
 | **Auditor** | Deep initial audit of new projects | Runs once on project registration |
@@ -179,30 +182,31 @@ Actions are ranked. Agents pick from the top 3. The reasoning is logged. Over ti
 
 ## Getting started
 
-### 1. Install global brain
+### 1. Install the shared runtime
 
 ```bash
 bash install.sh
 ```
 
-This sets up `~/.claude/knowledge/`, installs hooks in `settings.json`, seeds QMP library, and adds cron jobs.
+This sets up `~/.claude/knowledge/`, installs shared hooks in `settings.json`,
+seeds the knowledge base, installs activation scripts, and adds cron jobs.
 
-### 2. Add your project
-
-```bash
-bash scripts/setup_brain.sh /path/to/my-project "Description of what the project does"
-```
-
-This creates `.brain/` in your project with scaffolded memory + knowledge files.
-
-### 3. Run the initial audit
+### 2. Activate your project
 
 ```bash
-# Opens an agent session to audit your project
-python3 scripts/project_auditor.py --project-dir /path/to/my-project
+python3 ~/.claude/scripts/activate_repo.py --project-dir /path/to/my-project
 ```
 
-The auditor reads all code, docs, and history, then writes a structured analysis to `.brain/knowledge/`.
+This runs preflight, infers starter departments, scaffolds `.brain/`,
+materializes repo-local `.claude/`, and registers the repo with the shared
+runtime.
+
+### 3. Review strategic confirmations
+
+Confirm:
+- project goal
+- department goals
+- major architecture changes
 
 ### 4. Start a Claude Code session
 
@@ -211,7 +215,9 @@ cd /path/to/my-project
 claude
 ```
 
-The hooks run automatically at session start. If an intelligence brief exists, it surfaces immediately. The auditor's findings are in context. The system knows where you left off.
+The shared runtime and repo-local hooks run automatically at session start. If
+an intelligence brief exists, it surfaces immediately. Ranked next actions are
+available in `.brain/state/action-queue.md` and `.claude/departments/*.md`.
 
 ---
 
@@ -221,7 +227,7 @@ After `install.sh`, the following cron jobs are active:
 
 | Schedule | Job | Output |
 |---|---|---|
-| Every 6h `:00` | Per-project intelligence brief (any registered project) | `.brain/daily/` |
+| Every 6h `:00` | Repo-local LLM cron for activated projects | `.claude/hooks/` + `.brain/state/` |
 | Every 6h `:30` | Global cross-project sweep | `~/.claude/knowledge/daily/` |
 | Weekly Sunday | GitHub architecture radar | `~/.claude/knowledge/resources/architecture-radar.md` |
 | Weekly Sunday | Architecture guardian review | `~/.claude/knowledge/areas/` |
@@ -231,10 +237,10 @@ After `install.sh`, the following cron jobs are active:
 ## Claude Code hook integration
 
 At every session start, the following run automatically:
-1. Check if `.brain/` exists — create if missing
-2. Run project health check
-3. Load latest AI intelligence brief
-4. Surface findings to the conversation
+1. Check activation state for the repo
+2. Load latest AI intelligence brief
+3. Read repo-local hooks and department context
+4. Surface ranked next actions to the conversation
 
 At every session end (via `Stop` hook):
 - Capture session summary to daily note

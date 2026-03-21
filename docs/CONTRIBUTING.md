@@ -8,6 +8,9 @@ autonomous intelligence are most welcome.
 
 ## What's in scope
 
+- Improvements to the `activate-repo` workflow
+- Repo-local `.claude/` templates, departments, and hooks
+- Global architecture radar and GitHub intelligence improvements
 - New intelligence scripts (`scripts/`)
 - New agent programs (`agents/`)
 - New QMP seed entries (`knowledge-seed/qmp/`)
@@ -32,9 +35,9 @@ cd compound-brain
 # Test install in dry-run mode
 bash install.sh --dry-run
 
-# Test setup_brain.sh on a scratch directory
+# Test activate_repo on a scratch directory
 mkdir /tmp/test-project && cd /tmp/test-project && git init
-bash /path/to/compound-brain/scripts/setup_brain.sh /tmp/test-project test-project "A test project"
+python3 /path/to/compound-brain/scripts/activate_repo.py --project-dir /tmp/test-project
 ```
 
 ---
@@ -49,6 +52,7 @@ bash /path/to/compound-brain/scripts/setup_brain.sh /tmp/test-project test-proje
 Scripts should:
 - Accept `--project-dir` as an argument
 - Write output to `.brain/knowledge/daily/` or `.brain/knowledge/areas/`
+- Respect `--dry-run` and `--check-only` modes where applicable
 - Never modify production code, configs, or JSONL data files
 - Handle missing `.brain/` gracefully (warn, don't crash)
 

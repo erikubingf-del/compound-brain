@@ -11,11 +11,16 @@ from pathlib import Path
 
 try:
     from scripts.lib.activation_registry import ActivationRegistry
+    from scripts.lib.audit_packet import build_audit_packet
+    from scripts.materialize_project_claude import materialize_project_claude
 except ModuleNotFoundError:
     from lib.activation_registry import ActivationRegistry
+    from lib.audit_packet import build_audit_packet
+    from materialize_project_claude import materialize_project_claude
 
 
 REGISTRY_PATH = Path.home() / ".claude" / "registry" / "activated-projects.json"
+SCRIPT_DIR = Path(__file__).resolve().parent
 
 
 def detect_git_root(project_dir: Path) -> Path:
@@ -114,10 +119,18 @@ def summarize(project_dir: Path) -> dict[str, object]:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter,
         description=(
-            "Activate an opted-in repo: run preflight, detect surfaces, and "
-            "register it for the compound-brain activation lifecycle."
-        )
+            "Activate an opted-in repo: run preflight, infer an initial control "
+            "plane, and register it for the compound-brain activation lifecycle."
+        ),
+        epilog=(
+            "Lifecycle:\n"
+            "  1. preflight   detect repo, stack, docs, tests, and current surfaces\n"
+            "  2. audit seed  infer starter departments and strategic confirmations\n"
+            "  3. materialize scaffold .brain and repo-local .claude control surfaces\n"
+            "  4. go live     hand off to audit, confirmation, and scheduled loops"
+        ),
     )
     parser.add_argument("--project-dir", default=".", help="Repo path to inspect")
     parser.add_argument(
@@ -133,6 +146,16 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def ensure_brain(repo_root: Path, repo_name: str) -> None:
+    setup_script = SCRIPT_DIR / "setup_brain.sh"
+    subprocess.run(
+        ["bash", str(setup_script), str(repo_root), repo_name],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+
+
 def main() -> int:
     args = build_parser().parse_args()
     try:
@@ -142,6 +165,17 @@ def main() -> int:
         return 1
 
     if not args.check_only:
+        packet = build_audit_packet(
+            repo_name=str(summary["repo_name"]),
+            tech_stack=list(summary["stack"]),
+            docs_present=bool(summary["docs"]),
+            ci_present=(Path(summary["repo_path"]) / ".github" / "workflows").exists(),
+        )
+        repo_root = Path(summary["repo_path"])
+        if not summary["has_brain"]:
+            ensure_brain(repo_root, str(summary["repo_name"]))
+        materialize_project_claude(repo_root, list(packet["departments"]))
+
         registry = ActivationRegistry(REGISTRY_PATH)
         summary["registry_record"] = registry.register_repo(
             repo_path=summary["repo_path"],
@@ -149,7 +183,11 @@ def main() -> int:
             stack=list(summary["stack"]),
             activation_mode="manual",
         )
-        summary["next_state"] = "registered"
+        summary["has_brain"] = True
+        summary["has_local_claude"] = True
+        summary["departments"] = packet["departments"]
+        summary["project_goal_candidates"] = packet["project_goal_candidates"]
+        summary["next_state"] = "awaiting-strategic-confirmation"
 
     if args.json:
         print(json.dumps(summary, indent=2))
@@ -166,7 +204,9 @@ def main() -> int:
     if args.check_only:
         print("next state: preflight complete")
     else:
-        print("next state: registered for activation")
+        print(f"departments: {', '.join(summary['departments'])}")
+        print("strategic confirmations: project goal, department goals, major architecture changes")
+        print("next state: awaiting strategic confirmation")
     return 0
 
 
