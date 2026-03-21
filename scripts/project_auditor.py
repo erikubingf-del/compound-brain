@@ -27,6 +27,11 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+try:
+    from scripts.lib.audit_packet import build_audit_packet
+except ModuleNotFoundError:
+    from lib.audit_packet import build_audit_packet
+
 CLAUDE_BIN = "__CLAUDE_BIN__"
 CONFIG_FILE = Path.home() / ".claude" / "intelligence_projects.json"
 
@@ -86,6 +91,11 @@ def collect_project_data(project_dir: Path) -> dict:
     d["brain_decisions"] = read_safe(
         project_dir / ".brain" / "knowledge" / "decisions" / "log.md", 800
     )
+    d["docs_present"] = any(
+        (project_dir / candidate).exists()
+        for candidate in ["README.md", "ARCHITECTURE.md", "CLAUDE.md"]
+    )
+    d["ci_present"] = (project_dir / ".github" / "workflows").exists()
 
     # Issues
     d["todo_count"] = _count_todos(project_dir)
@@ -324,6 +334,81 @@ updated: {d}
     return report_path
 
 
+def write_activation_state(project_dir: Path, project_name: str, audit: str, packet: dict) -> None:
+    knowledge_dir = project_dir / ".brain" / "knowledge"
+    state_dir = project_dir / ".brain" / "state"
+    audit_dir = knowledge_dir / "audits"
+    state_dir.mkdir(parents=True, exist_ok=True)
+    audit_dir.mkdir(parents=True, exist_ok=True)
+
+    timestamp = now_utc()
+
+    initial_audit_path = audit_dir / "initial-audit.md"
+    initial_audit_path.write_text(
+        f"""# Initial Audit — {project_name}
+
+Generated: {timestamp}
+
+## LLM Audit
+
+{audit}
+
+## Structured Packet
+
+### Project Goal Candidates
+"""
+        + "\n".join(f"- {goal}" for goal in packet["project_goal_candidates"])
+        + "\n\n### Departments\n"
+        + "\n".join(f"- {department}" for department in packet["departments"])
+        + "\n\n### Proposed Architecture Changes\n"
+        + "\n".join(f"- {change}" for change in packet["proposed_architecture_changes"])
+        + "\n"
+    )
+
+    goals_path = state_dir / "goals.md"
+    goals_path.write_text(
+        f"""# Goals — {project_name}
+
+Status: awaiting strategic confirmation
+
+## Project Goal Candidates
+"""
+        + "\n".join(f"- {goal}" for goal in packet["project_goal_candidates"])
+        + "\n\n## Confirmed Goal\n- Pending user confirmation\n\n## Department Goals\n"
+        + "\n".join(
+            f"- {department}: {goal}"
+            for department, goal in packet["department_goals"].items()
+        )
+        + "\n"
+    )
+
+    audit_status_path = state_dir / "audit-status.md"
+    audit_status_path.write_text(
+        f"""# Audit Status — {project_name}
+
+- Status: awaiting-strategic-confirmation
+- Last audit: {timestamp}
+- Strategic confirmations needed:
+  - project goal
+  - department goals
+  - major architecture changes
+"""
+    )
+
+    action_queue_path = state_dir / "action-queue.md"
+    action_queue_path.write_text(
+        f"""# Action Queue — {project_name}
+
+## Candidate Actions
+"""
+        + "\n".join(
+            f"{index}. {action['title']}\nWhy: {action['why']}\nEffort: {action['effort']}"
+            for index, action in enumerate(packet["candidate_actions"], start=1)
+        )
+        + "\n"
+    )
+
+
 # ─── Main ────────────────────────────────────────────────────────────────────
 
 def audit_project(project_dir: Path, force: bool = False) -> bool:
@@ -341,6 +426,12 @@ def audit_project(project_dir: Path, force: bool = False) -> bool:
     print(f"\n[auditor] Auditing: {project_dir.name}")
     print(f"  Collecting project data...")
     data = collect_project_data(project_dir)
+    packet = build_audit_packet(
+        repo_name=project_dir.name,
+        tech_stack=data["tech_stack"],
+        docs_present=bool(data["docs_present"]),
+        ci_present=bool(data["ci_present"]),
+    )
 
     print(f"  Tech stack: {', '.join(data['tech_stack']) or 'unknown'}")
     print(f"  Calling claude for deep audit (~60s)...")
@@ -349,6 +440,7 @@ def audit_project(project_dir: Path, force: bool = False) -> bool:
     audit = call_claude(prompt)
 
     report_path = write_audit(project_dir, project_dir.name, audit, data)
+    write_activation_state(project_dir, project_dir.name, audit, packet)
     print(f"  Audit written → {report_path}")
 
     return True
