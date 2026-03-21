@@ -1,0 +1,15 @@
+# Brain sensitive files (keep public structure, hide private state)
+.brain/memory/*.md
+.brain/knowledge/daily/
+~/.claude/knowledge/daily/
+
+# Secrets
+.env
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
