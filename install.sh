@@ -9,6 +9,8 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BRAIN_DIR="${HOME}/.claude"
 KNOWLEDGE_DIR="${BRAIN_DIR}/knowledge"
 SCRIPTS_DIR="${BRAIN_DIR}/scripts"
+LIB_DIR="${SCRIPTS_DIR}/lib"
+REGISTRY_DIR="${BRAIN_DIR}/registry"
 SETTINGS_FILE="${BRAIN_DIR}/settings.json"
 CONFIG_FILE="${BRAIN_DIR}/intelligence_projects.json"
 DRY_RUN=false
@@ -72,6 +74,7 @@ echo ""
 echo "────────────────────────────────────────────"
 echo "  compound-brain installer"
 echo "  Installing to: $BRAIN_DIR"
+echo "  Primary workflow: activate-repo"
 echo "────────────────────────────────────────────"
 echo ""
 
@@ -87,7 +90,9 @@ for dir in \
   "$KNOWLEDGE_DIR/decisions" \
   "$KNOWLEDGE_DIR/skills" \
   "$KNOWLEDGE_DIR/qmp" \
+  "$REGISTRY_DIR" \
   "$SCRIPTS_DIR" \
+  "$LIB_DIR" \
   "${BRAIN_DIR}/hooks"
 do
   run "mkdir -p \"$dir\""
@@ -98,6 +103,7 @@ ok "Directories created"
 echo ""
 echo "[ 2/7 ] Installing scripts..."
 SCRIPTS=(
+  "activate_repo.py"
   "project_intelligence.py"
   "global_intelligence_sweeper.py"
   "intelligence_brief_hook.py"
@@ -118,6 +124,13 @@ for script in "${SCRIPTS[@]}"; do
   else
     warn "Not found (skipping): $script"
   fi
+done
+
+for lib_file in "${REPO_DIR}/scripts/lib/"*.py; do
+  [[ -f "$lib_file" ]] || continue
+  fname=$(basename "$lib_file")
+  run "cp \"$lib_file\" \"${LIB_DIR}/${fname}\""
+  ok "Installed library: $fname"
 done
 
 # ─── Step 3: Seed knowledge base ─────────────────────────────────────────────
