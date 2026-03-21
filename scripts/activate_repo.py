@@ -11,15 +11,19 @@ import sys
 from pathlib import Path
 
 try:
+    from scripts.lib.approval_state import ApprovalStateStore
     from scripts.lib.activation_registry import ActivationRegistry
     from scripts.lib.audit_packet import build_audit_packet
     from scripts.lib.repo_preview_cache import RepoPreviewCache
     from scripts.materialize_project_claude import materialize_project_claude
+    from scripts.prepare_brain import prepare_brain
 except ModuleNotFoundError:
+    from lib.approval_state import ApprovalStateStore
     from lib.activation_registry import ActivationRegistry
     from lib.audit_packet import build_audit_packet
     from lib.repo_preview_cache import RepoPreviewCache
     from materialize_project_claude import materialize_project_claude
+    from prepare_brain import prepare_brain
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -177,16 +181,6 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def ensure_brain(repo_root: Path, repo_name: str) -> None:
-    setup_script = SCRIPT_DIR / "setup_brain.sh"
-    subprocess.run(
-        ["bash", str(setup_script), str(repo_root), repo_name],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-
-
 def build_preview_record(summary: dict[str, object], packet: dict[str, object]) -> dict[str, object]:
     next_actions = [
         action["title"]
@@ -228,9 +222,18 @@ def main() -> int:
         summary["next_state"] = "preview-ready"
     else:
         repo_root = Path(summary["repo_path"])
-        if not summary["has_brain"]:
-            ensure_brain(repo_root, str(summary["repo_name"]))
+        if (
+            not summary["has_brain"]
+            or not (repo_root / "CLAUDE.md").exists()
+            or not (repo_root / ".codex" / "AGENTS.md").exists()
+        ):
+            prepare_brain(repo_root)
         materialize_project_claude(repo_root, list(packet["departments"]))
+        approval_store = ApprovalStateStore(repo_root / ".brain" / "state")
+        approval_state = approval_store.initialize(
+            project_goal_candidates=list(packet["project_goal_candidates"]),
+            departments=list(packet["departments"]),
+        )
 
         registry = ActivationRegistry(activation_registry_path())
         summary["registry_record"] = registry.register_repo(
@@ -241,6 +244,7 @@ def main() -> int:
         )
         summary["has_brain"] = True
         summary["has_local_claude"] = True
+        summary["approval_state"] = approval_state["state"]
         summary["next_state"] = "awaiting-strategic-confirmation"
 
     if args.json:
