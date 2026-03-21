@@ -10,8 +10,12 @@ from pathlib import Path
 
 try:
     from scripts.lib.department_cycle import run_department_cycle
+    from scripts.lib.promotion_inbox import PromotionInbox
+    from scripts.lib.skill_evolution import promote_skill_pattern
 except ModuleNotFoundError:
     from lib.department_cycle import run_department_cycle
+    from lib.promotion_inbox import PromotionInbox
+    from lib.skill_evolution import promote_skill_pattern
 
 
 def claude_home_dir() -> Path:
@@ -55,6 +59,25 @@ def run_project_cron(project_dir: Path, dry_run: bool = False) -> tuple[str, int
         return (f"[dry-run] {', '.join(departments)}", 0)
 
     results = [run_department_cycle(project_dir, department) for department in departments]
+    inbox = PromotionInbox(claude_home_dir() / "knowledge" / "promotions")
+    for result in results:
+        if result.get("skill_promotion"):
+            promote_skill_pattern(
+                repo=project_dir,
+                skill_name=str(result["skill_promotion"]["skill_name"]),
+                related_projects=[project_dir.name],
+                key_knowledge=str(result["skill_promotion"]["key_knowledge"]),
+                next_improvements=str(result["skill_promotion"]["next_improvements"]),
+                pattern_body=str(result["skill_promotion"]["pattern_body"]),
+            )
+        if result.get("cross_project_candidate"):
+            candidate = result["cross_project_candidate"]
+            inbox.submit_candidate(
+                source_repo=project_dir.name,
+                title=str(candidate["title"]),
+                summary=str(candidate["summary"]),
+                target_kind=str(candidate["target_kind"]),
+            )
     summary = ", ".join(
         f"{result['department']}={result['status']}" for result in results
     )
