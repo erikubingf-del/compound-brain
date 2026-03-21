@@ -67,7 +67,9 @@ def detect_repo_name(project_dir: Path, repo_root: Path) -> str:
     )
     if result.returncode == 0:
         common_dir = Path(result.stdout.strip())
-        if common_dir.name == ".git":
+        if not common_dir.is_absolute():
+            common_dir = (repo_root / common_dir).resolve()
+        if common_dir.name == ".git" and common_dir.parent.name:
             return common_dir.parent.name
     return repo_root.name
 
