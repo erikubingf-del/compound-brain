@@ -112,6 +112,7 @@ echo "[ 2/7 ] Installing scripts..."
 SCRIPTS=(
   "activate_repo.py"
   "architecture_radar.py"
+  "bootstrap_codex_runtime.py"
   "materialize_project_claude.py"
   "prepare_brain.py"
   "project_intelligence.py"
@@ -119,6 +120,7 @@ SCRIPTS=(
   "intelligence_brief_hook.py"
   "project_auditor.py"
   "probability_engine.py"
+  "review_promotion_inbox.py"
   "run_project_llm_cron.py"
   "github_intelligence.py"
   "setup_brain.sh"
@@ -316,6 +318,15 @@ else
   echo "    {\"type\":\"command\",\"command\":\"${PYTHON_BIN} ${HOOK_SCRIPT} 2>/dev/null\",\"timeout\":3}"
 fi
 
+echo ""
+echo "      Bootstrapping Codex runtime..."
+CODEX_BOOTSTRAP_SCRIPT="${SCRIPTS_DIR}/bootstrap_codex_runtime.py"
+if $DRY_RUN; then
+  echo "  [dry-run] ${PYTHON_BIN} ${CODEX_BOOTSTRAP_SCRIPT}"
+else
+  "${PYTHON_BIN}" "${CODEX_BOOTSTRAP_SCRIPT}" || warn "Codex bootstrap failed — review ~/.codex/AGENTS.md manually"
+fi
+
 # ─── Step 5: Project registry ────────────────────────────────────────────────
 echo ""
 echo "[ 5/7 ] Setting up project registry..."
@@ -368,6 +379,9 @@ install_cron "COMPOUND_GITHUB_INTEL" \
 install_cron "COMPOUND_ARCH_GUARDIAN" \
   "0 10 * * 0 ${PYTHON_BIN} ${SCRIPTS_DIR}/project_auditor.py --all-registered >> /tmp/compound_audit.log 2>&1 # COMPOUND_ARCH_GUARDIAN"
 
+install_cron "COMPOUND_PROMOTION_REVIEW" \
+  "15 */6 * * * ${PYTHON_BIN} ${SCRIPTS_DIR}/review_promotion_inbox.py >> /tmp/compound_promotion_review.log 2>&1 # COMPOUND_PROMOTION_REVIEW"
+
 # ─── Step 7: Gitignore for brain ─────────────────────────────────────────────
 echo ""
 echo "[ 7/7 ] Finalizing..."
@@ -410,6 +424,8 @@ echo "     ${PYTHON_BIN} ${SCRIPTS_DIR}/activate_repo.py --project-dir /path/to/
 echo ""
 echo "  4. Open Claude Code in your project after activation:"
 echo "     cd /path/to/your/project && claude"
+echo ""
+echo "  Codex is bootstrapped globally through ~/.codex/AGENTS.md to use the same runtime."
 echo ""
 echo "  Shared cron runs every 6h. Next run: $(date -d '+6 hours' '+%H:%M' 2>/dev/null || date -v+6H '+%H:%M')"
 echo ""
