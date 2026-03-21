@@ -100,6 +100,7 @@ TODAY="$(date +%Y-%m-%d)"
 BRAIN_DIR="${PROJECT_DIR}/.brain"
 KNOWLEDGE_DIR="${BRAIN_DIR}/knowledge"
 MEMORY_DIR="${BRAIN_DIR}/memory"
+STATE_DIR="${BRAIN_DIR}/state"
 
 echo ""
 echo "  Scaffolding .brain/ for: $PROJECT_NAME"
@@ -118,7 +119,8 @@ for dir in \
   "${KNOWLEDGE_DIR}/skills" \
   "${KNOWLEDGE_DIR}/qmp" \
   "${KNOWLEDGE_DIR}/crons" \
-  "${MEMORY_DIR}"
+  "${MEMORY_DIR}" \
+  "${STATE_DIR}"
 do
   mkdir -p "$dir"
 done

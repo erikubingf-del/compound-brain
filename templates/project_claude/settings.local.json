@@ -1,0 +1,27 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/project_session_start.py"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/project_stop.py"
+          }
+        ]
+      }
+    ]
+  },
+  "llmCron": {
+    "command": "python3 .claude/hooks/project_llm_cron.py"
+  }
+}
