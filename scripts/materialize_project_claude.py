@@ -5,6 +5,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
+try:
+    from scripts.lib.department_state import initialize_department_state
+except ModuleNotFoundError:
+    from lib.department_state import initialize_department_state
+
 
 TEMPLATE_ROOT = Path(__file__).resolve().parents[1] / "templates" / "project_claude"
 CODEX_TEMPLATE_ROOT = Path(__file__).resolve().parents[1] / "templates" / "project_codex"
@@ -107,6 +112,8 @@ def materialize_project_claude(repo: Path, departments: list[str]) -> None:
         (departments_dir / f"{department}.md").write_text(
             render_template(specific_template, project_name, department)
         )
+
+    initialize_department_state(repo, departments)
 
 
 if __name__ == "__main__":
