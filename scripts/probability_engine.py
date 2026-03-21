@@ -30,6 +30,20 @@ from pathlib import Path
 from typing import Literal
 
 CLAUDE_BIN = "__CLAUDE_BIN__"
+
+try:
+    from scripts.lib.action_queue import rank_actions as rank_action_queue
+    from scripts.lib.department_manager import (
+        write_project_action_queue,
+        write_ranked_department_actions,
+    )
+except ModuleNotFoundError:
+    from lib.action_queue import rank_actions as rank_action_queue
+    from lib.department_manager import (
+        write_project_action_queue,
+        write_ranked_department_actions,
+    )
+
 STAGE_LABELS = {
     (0, 2): "bootstrap",      # First commits, no tests, no docs
     (2, 4): "foundation",     # Core logic exists, rough edges
@@ -432,6 +446,38 @@ def _log_ranking(project_dir: Path, top5: list[Action], reasoning: str) -> None:
     except Exception:
         pass
 
+    queue_actions = rank_action_queue(
+        [
+            {
+                "title": action.title,
+                "department": _department_for_action(action.category),
+                "why": action.description,
+                "goal_alignment": action.expected_impact,
+                "probability": action.p_success,
+                "urgency": action.urgency,
+                "cost": action.cost,
+                "evidence_quality": 1.0,
+            }
+            for action in top5
+        ]
+    )
+    write_project_action_queue(project_dir, project_dir.name, queue_actions)
+    write_ranked_department_actions(project_dir, queue_actions)
+
+
+def _department_for_action(category: ActionCategory) -> str:
+    mapping = {
+        "feature": "engineering",
+        "fix": "engineering",
+        "debt": "architecture",
+        "docs": "product",
+        "infra": "operations",
+        "research": "research",
+        "security": "operations",
+        "test": "engineering",
+    }
+    return mapping.get(category, "architecture")
+
 
 # ─── Main ────────────────────────────────────────────────────────────────────
 
@@ -441,8 +487,9 @@ def main() -> None:
     parser.add_argument("--output", choices=["text", "json"], default="text")
     args = parser.parse_args()
 
-    print(f"[probability-engine] Analyzing {Path(args.project_dir).name}...")
-    state = ProjectState.from_brain(Path(args.project_dir))
+    project_path = Path(args.project_dir).resolve()
+    print(f"[probability-engine] Analyzing {project_path.name}...")
+    state = ProjectState.from_brain(project_path)
 
     print(f"  Stage: {state.stage:.1f}/10 ({state.stage_label()})")
     print(f"  Goal: {state.goal[:80]}")

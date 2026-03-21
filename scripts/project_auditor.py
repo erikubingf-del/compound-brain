@@ -29,8 +29,18 @@ from pathlib import Path
 
 try:
     from scripts.lib.audit_packet import build_audit_packet
+    from scripts.lib.action_queue import rank_actions as rank_action_queue
+    from scripts.lib.department_manager import (
+        write_project_action_queue,
+        write_ranked_department_actions,
+    )
 except ModuleNotFoundError:
     from lib.audit_packet import build_audit_packet
+    from lib.action_queue import rank_actions as rank_action_queue
+    from lib.department_manager import (
+        write_project_action_queue,
+        write_ranked_department_actions,
+    )
 
 CLAUDE_BIN = "__CLAUDE_BIN__"
 CONFIG_FILE = Path.home() / ".claude" / "intelligence_projects.json"
@@ -342,6 +352,7 @@ def write_activation_state(project_dir: Path, project_name: str, audit: str, pac
     audit_dir.mkdir(parents=True, exist_ok=True)
 
     timestamp = now_utc()
+    ranked_actions = rank_action_queue(packet["candidate_actions"])
 
     initial_audit_path = audit_dir / "initial-audit.md"
     initial_audit_path.write_text(
@@ -396,17 +407,10 @@ Status: awaiting strategic confirmation
     )
 
     action_queue_path = state_dir / "action-queue.md"
-    action_queue_path.write_text(
-        f"""# Action Queue — {project_name}
-
-## Candidate Actions
-"""
-        + "\n".join(
-            f"{index}. {action['title']}\nWhy: {action['why']}\nEffort: {action['effort']}"
-            for index, action in enumerate(packet["candidate_actions"], start=1)
-        )
-        + "\n"
-    )
+    if action_queue_path.exists():
+        action_queue_path.unlink()
+    write_project_action_queue(project_dir, project_name, ranked_actions)
+    write_ranked_department_actions(project_dir, ranked_actions)
 
 
 # ─── Main ────────────────────────────────────────────────────────────────────
