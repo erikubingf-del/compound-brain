@@ -39,7 +39,7 @@ The core idea: every session should make the next session more effective.
 │  │                                                         │  │
 │  │  project_intelligence.py  ─── reads .brain/ + git log  │  │
 │  │  global_intelligence_sweeper.py ─── cross-project       │  │
-│  │  github_intelligence.py ──── GitHub search + trends     │  │
+│  │  github_intelligence.py ──── GitHub search + radar      │  │
 │  │  project_auditor.py ───────── monthly deep audit        │  │
 │  └─────────────────────────────────────────────────────────┘  │
 │                                                                │
@@ -69,7 +69,7 @@ The core idea: every session should make the next session more effective.
 | `intelligence_brief_hook.py` | SessionStart hook | Surfaces latest brief to Claude |
 | `project_auditor.py` | Monthly cron + on-demand | `.brain/knowledge/areas/project-audit.md` |
 | `probability_engine.py` | On-demand | Ranked list of highest-EV actions |
-| `github_intelligence.py` | Weekly cron | `.brain/knowledge/resources/github-intel.md` |
+| `github_intelligence.py` | Weekly cron | `.brain/knowledge/resources/github-intel.md` + `architecture-radar.md` |
 | `nightly_review.sh` | Stop hook | Appends session summary to daily note |
 
 ### Agent programs (`agents/`)

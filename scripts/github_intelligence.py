@@ -33,6 +33,11 @@ import urllib.error
 from datetime import datetime, timezone
 from pathlib import Path
 
+try:
+    from scripts.architecture_radar import finding_from_repo, rank_findings, render_radar
+except ModuleNotFoundError:
+    from architecture_radar import finding_from_repo, rank_findings, render_radar
+
 CLAUDE_BIN = "__CLAUDE_BIN__"
 CONFIG_FILE = Path.home() / ".claude" / "intelligence_projects.json"
 GLOBAL_KNOWLEDGE = Path.home() / ".claude" / "knowledge"
@@ -124,13 +129,14 @@ def get_project_search_terms(project_dir: Path) -> list[str]:
     return list(dict.fromkeys(terms))[:5]  # deduplicate, limit to 5
 
 
-def run_github_intel_for_project(project_dir: Path) -> str:
-    """Search GitHub for project-relevant repos. Returns markdown findings."""
+def run_github_intel_for_project(project_dir: Path) -> tuple[str, list[dict]]:
+    """Search GitHub for project-relevant repos. Returns markdown findings and radar candidates."""
     name = project_dir.name
     print(f"  [{name}] Getting search terms...")
     terms = get_project_search_terms(project_dir)
 
     findings: list[str] = []
+    radar_candidates: list[dict] = []
     findings.append(f"# GitHub Intelligence — {name}\n*Sweep: {now_utc()}*\n")
 
     for term in terms:
@@ -140,9 +146,10 @@ def run_github_intel_for_project(project_dir: Path) -> str:
             findings.append(f"\n## Search: `{term}`\n")
             for repo in repos:
                 findings.append(f"- {format_repo(repo)}")
+                radar_candidates.append(finding_from_repo(term, repo))
         time.sleep(6)  # Respect GitHub rate limit (10 req/min)
 
-    return "\n".join(findings)
+    return "\n".join(findings), rank_findings(radar_candidates)
 
 
 # ─── LLM synthesis ───────────────────────────────────────────────────────────
@@ -184,7 +191,7 @@ Max 150 words. Be concrete — reference actual repos found."""
 
 # ─── Output ──────────────────────────────────────────────────────────────────
 
-def write_project_intel(project_dir: Path, raw: str, synthesis: str) -> None:
+def write_project_intel(project_dir: Path, raw: str, synthesis: str, ranked_findings: list[dict]) -> None:
     brain_res = project_dir / ".brain" / "knowledge" / "resources"
     brain_res.mkdir(parents=True, exist_ok=True)
 
@@ -193,15 +200,23 @@ def write_project_intel(project_dir: Path, raw: str, synthesis: str) -> None:
     path.write_text(content)
     print(f"  Written → {path}")
 
+    radar_path = brain_res / "architecture-radar.md"
+    radar_path.write_text(
+        render_radar(f"Architecture Radar — {project_dir.name}", ranked_findings[:5])
+    )
+    print(f"  Written → {radar_path}")
 
-def write_global_summary(all_synthesis: dict[str, str]) -> None:
+
+def write_global_summary(all_synthesis: dict[str, str], all_findings: list[dict]) -> None:
     d = date_str()
     ts = now_utc()
     daily = GLOBAL_KNOWLEDGE / "daily"
     daily.mkdir(parents=True, exist_ok=True)
+    resources = GLOBAL_KNOWLEDGE / "resources"
+    resources.mkdir(parents=True, exist_ok=True)
 
-    report_path = GLOBAL_KNOWLEDGE / "resources" / f"github-intel-{d}.md"
-    latest_path = GLOBAL_KNOWLEDGE / "resources" / "github-intel-latest.md"
+    report_path = resources / f"github-intel-{d}.md"
+    latest_path = resources / "github-intel-latest.md"
 
     lines = [f"# GitHub Intelligence Sweep — {ts}\n"]
     for project_name, synthesis in all_synthesis.items():
@@ -211,6 +226,14 @@ def write_global_summary(all_synthesis: dict[str, str]) -> None:
     report_path.write_text(content)
     latest_path.write_text(content)
     print(f"\n[github-intel] Global report → {report_path}")
+
+    ranked = rank_findings(all_findings)
+    radar_report_path = resources / f"architecture-radar-{d}.md"
+    radar_latest_path = resources / "architecture-radar.md"
+    radar_content = render_radar(f"Global Architecture Radar — {ts}", ranked[:10])
+    radar_report_path.write_text(radar_content)
+    radar_latest_path.write_text(radar_content)
+    print(f"[github-intel] Architecture radar → {radar_latest_path}")
 
 
 # ─── Main ────────────────────────────────────────────────────────────────────
@@ -234,6 +257,7 @@ def main() -> None:
         return
 
     all_synthesis: dict[str, str] = {}
+    all_findings: list[dict] = []
 
     for project_dir in project_dirs:
         if not project_dir.exists():
@@ -247,13 +271,14 @@ def main() -> None:
             continue
 
         print(f"\n[github-intel] → {project_dir.name}")
-        raw = run_github_intel_for_project(project_dir)
+        raw, ranked_findings = run_github_intel_for_project(project_dir)
         synthesis = synthesize_with_llm(project_dir, raw)
-        write_project_intel(project_dir, raw, synthesis)
+        write_project_intel(project_dir, raw, synthesis, ranked_findings)
         all_synthesis[project_dir.name] = synthesis
+        all_findings.extend(ranked_findings)
 
     if all_synthesis:
-        write_global_summary(all_synthesis)
+        write_global_summary(all_synthesis, all_findings)
 
     print(f"\n[github-intel] Done. {now_utc()}")
 

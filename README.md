@@ -44,7 +44,7 @@ It combines:
 - **Autonomous agent loops** — discovery, monitoring, auditing, architecture
 - **Cron + Claude Code hooks** — intelligence runs on schedule, surfaces at session start
 - **Probability engine** — agents rank next actions by expected outcome value
-- **GitHub intelligence** — weekly sweep of external repos to keep architecture current
+- **GitHub architecture radar** — weekly sweep of external repos ranked by architectural usefulness
 
 When you start a Claude Code or Codex session, pre-computed AI analysis is waiting for you. When you're not working, agents are still learning.
 
@@ -96,7 +96,7 @@ python3 scripts/project_intelligence.py --project-dir /path/to/your/project --dr
 | **Discovery loop** | Autonomous candidate generation + evaluation | `autoresearch` skill or cron |
 | **Monitor loop** | Live gate tracking, collapse detection | 5-min polling, cron |
 | **Architecture guardian** | Keeps system architecture current | Weekly cron |
-| **GitHub sweep** | External intelligence from GitHub | Weekly cron |
+| **GitHub architecture radar** | External repos ranked by architecture and goal fit | Weekly cron |
 | **Probability engine** | Ranks next actions by expected value | Called by all agents |
 
 ---
@@ -223,7 +223,7 @@ After `install.sh`, the following cron jobs are active:
 |---|---|---|
 | Every 6h `:00` | Per-project intelligence brief (any registered project) | `.brain/daily/` |
 | Every 6h `:30` | Global cross-project sweep | `~/.claude/knowledge/daily/` |
-| Weekly Sunday | GitHub intelligence sweep | `~/.claude/knowledge/resources/github-intel.md` |
+| Weekly Sunday | GitHub architecture radar | `~/.claude/knowledge/resources/architecture-radar.md` |
 | Weekly Sunday | Architecture guardian review | `~/.claude/knowledge/areas/` |
 
 ---

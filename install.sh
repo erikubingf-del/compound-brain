@@ -107,6 +107,7 @@ echo ""
 echo "[ 2/7 ] Installing scripts..."
 SCRIPTS=(
   "activate_repo.py"
+  "architecture_radar.py"
   "materialize_project_claude.py"
   "project_intelligence.py"
   "global_intelligence_sweeper.py"
