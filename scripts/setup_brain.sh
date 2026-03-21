@@ -193,6 +193,63 @@ EOF
   ok "Created: memory/project_context.md"
 fi
 
+# ─── memory/feedback_rules.md ────────────────────────────────────────────────
+if [[ ! -f "${MEMORY_DIR}/feedback_rules.md" ]]; then
+  cat > "${MEMORY_DIR}/feedback_rules.md" <<EOF
+---
+name: ${PROJECT_NAME} feedback rules
+description: Project-specific feedback and correction rules
+type: feedback
+---
+
+_(No project-specific feedback rules yet. Add corrections and confirmations as they occur.)_
+
+**How to apply:** Project-level feedback rules override global ones when working in this repo.
+EOF
+  ok "Created: memory/feedback_rules.md"
+fi
+
+# ─── knowledge/projects/<project>.md ────────────────────────────────────────
+if [[ ! -f "${KNOWLEDGE_DIR}/projects/${PROJECT_NAME}.md" ]]; then
+  cat > "${KNOWLEDGE_DIR}/projects/${PROJECT_NAME}.md" <<EOF
+---
+title: ${PROJECT_NAME}
+status: active
+updated: ${TODAY}
+---
+
+# ${PROJECT_NAME}
+
+## Goal
+${PROJECT_DESC:-<!-- What outcome should this project achieve? -->}
+
+## Status
+active
+
+## Scope
+<!-- What is in scope for this repo? -->
+
+## Current State
+<!-- Current architecture, product state, and known constraints -->
+
+## Key Concepts
+<!-- Core ideas or systems in this project -->
+
+## Key Decisions
+<!-- Major decisions that shape execution -->
+
+## Risks
+<!-- What could slow down or derail this project? -->
+
+## Next Actions
+<!-- Highest-priority next steps -->
+
+## Links
+<!-- Key docs, services, or related repos -->
+EOF
+  ok "Created: knowledge/projects/${PROJECT_NAME}.md"
+fi
+
 # ─── knowledge/decisions/log.md ──────────────────────────────────────────────
 if [[ ! -f "${KNOWLEDGE_DIR}/decisions/log.md" ]]; then
   cat > "${KNOWLEDGE_DIR}/decisions/log.md" <<'EOF'
