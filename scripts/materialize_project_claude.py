@@ -69,9 +69,29 @@ def materialize_prepared_project(repo: Path) -> None:
     materialize_codex_adapter(repo)
 
 
+def materialize_autoresearch_placeholder(repo: Path) -> None:
+    autoresearch_dir = repo / ".brain" / "autoresearch"
+    autoresearch_dir.mkdir(parents=True, exist_ok=True)
+    program_template = load_template(
+        TEMPLATE_ROOT,
+        "autoresearch/program.md",
+        "# Program\n\n## Objective\nDefine the autoresearch objective.\n",
+    )
+    program_path = autoresearch_dir / "program.md"
+    if not program_path.exists():
+        program_path.write_text(render_template(program_template, repo.name))
+    queue_path = autoresearch_dir / "queue.md"
+    if not queue_path.exists():
+        queue_path.write_text("# Autoresearch Queue\n\n- Define the first hypothesis.\n")
+    results_path = autoresearch_dir / "results.jsonl"
+    if not results_path.exists():
+        results_path.write_text("")
+
+
 def materialize_project_claude(repo: Path, departments: list[str]) -> None:
     project_name = repo.name
     materialize_prepared_project(repo)
+    materialize_autoresearch_placeholder(repo)
     claude_dir = repo / ".claude"
     hooks_dir = claude_dir / "hooks"
     departments_dir = claude_dir / "departments"
