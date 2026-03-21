@@ -5,11 +5,23 @@ from __future__ import annotations
 
 import argparse
 import json
-import subprocess
+import os
 from pathlib import Path
 
+try:
+    from scripts.lib.department_cycle import run_department_cycle
+except ModuleNotFoundError:
+    from lib.department_cycle import run_department_cycle
 
-REGISTRY_PATH = Path.home() / ".claude" / "registry" / "activated-projects.json"
+
+def claude_home_dir() -> Path:
+    override = os.environ.get("COMPOUND_BRAIN_HOME")
+    if override:
+        return Path(override)
+    return Path.home() / ".claude"
+
+
+REGISTRY_PATH = claude_home_dir() / "registry" / "activated-projects.json"
 
 
 def load_registry() -> list[dict]:
@@ -19,30 +31,34 @@ def load_registry() -> list[dict]:
     return list(data.get("projects", []))
 
 
-def run_project_cron(project_dir: Path, dry_run: bool = False) -> tuple[str, int]:
+def enabled_departments(project_dir: Path) -> list[str]:
     settings_path = project_dir / ".claude" / "settings.local.json"
     if not settings_path.exists():
-        return ("missing settings.local.json", 0)
+        return []
 
     settings = json.loads(settings_path.read_text())
-    command = settings.get("llmCron", {}).get("command")
-    if not command:
-        return ("missing llmCron.command", 0)
+    departments = settings.get("enabledDepartments")
+    if isinstance(departments, list) and departments:
+        return [str(item) for item in departments]
+    departments_dir = project_dir / ".claude" / "departments"
+    if departments_dir.exists():
+        return sorted(path.stem for path in departments_dir.glob("*.md"))
+    return []
+
+
+def run_project_cron(project_dir: Path, dry_run: bool = False) -> tuple[str, int]:
+    departments = enabled_departments(project_dir)
+    if not departments:
+        return ("missing enabled departments", 0)
 
     if dry_run:
-        return (f"[dry-run] {command}", 0)
+        return (f"[dry-run] {', '.join(departments)}", 0)
 
-    result = subprocess.run(
-        command,
-        shell=True,
-        capture_output=True,
-        text=True,
-        cwd=str(project_dir),
-        check=False,
+    results = [run_department_cycle(project_dir, department) for department in departments]
+    summary = ", ".join(
+        f"{result['department']}={result['status']}" for result in results
     )
-    if result.returncode == 0:
-        return (result.stdout.strip() or "ok", 0)
-    return (result.stderr.strip() or "failed", result.returncode)
+    return (summary or "ok", 0)
 
 
 def main() -> int:
