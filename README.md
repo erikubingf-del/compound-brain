@@ -1,14 +1,42 @@
 # compound-brain
 
-**A global AI orchestrator with explicit repo activation.**
+**A shared orchestration layer for Claude Code and Codex.**
 
-`compound-brain` installs a shared brain once into `~/.claude`, then manages
-repos through a strict lifecycle:
+`compound-brain` installs one global brain into `~/.claude` and a managed
+Codex adapter into `~/.codex/AGENTS.md`, so both tools operate with the same
+memory model, repo language, and runtime rules.
+
+After install, Claude and Codex should:
+- search and write against the same PARA/QMP-style knowledge system
+- read the same repo control surfaces: `CLAUDE.md`, `.brain/`, and `.claude/`
+- follow the same preview, prepare, activate lifecycle
+- promote reusable learnings through the same global review path
+
+That gives you one orchestrator across tools, and one living project brain per
+activated repo instead of parallel Claude/Codex memory systems.
+
+Repos then move through a strict lifecycle:
 
 1. `observe` — detect the repo, read it, do not write repo files
 2. `preview` — store a global read-only recommendation
 3. `prepare-brain` — write `CLAUDE.md`, `.brain/`, and `.codex/AGENTS.md`
-4. `activate-repo` — add `.claude/`, departments, approvals, hooks, crons, and bounded autonomy
+4. `activate-repo` — add `.claude/`, departments, approvals, hooks, crons, and
+   bounded autonomy
+
+## What installs globally
+
+The global install is the cross-project orchestrator. It is responsible for:
+
+- overall memory architecture in `~/.claude/`
+- shared logs, skills, QMP, decisions, and retrieval behavior
+- repo preview cache for non-activated projects
+- promotion inbox and scheduled review for cross-project learnings
+- architecture radar and recurring improvement loops
+- a managed Codex bootstrap so Codex speaks the same operating language as
+  Claude
+
+This layer should improve itself over time without depending on any single
+project repo.
 
 ## Core model
 
@@ -25,6 +53,17 @@ repos through a strict lifecycle:
 - Codex adapter in `.codex/AGENTS.md`
   - reads the same repo control plane as Claude
   - does not create a second repo runtime
+
+## What activated repos become
+
+An activated repo is treated like a small company run by a bounded
+orchestrator:
+
+- departments are created from the repo shape and project goal
+- each department gets contracts, owned surfaces, state, and memory
+- hooks and cron-driven loops keep reviewing, logging, and improving work
+- project-specific skills, QMP, and decisions accumulate in `.brain/`
+- strategic changes still go through approvals instead of silent drift
 
 ## Why this shape
 
