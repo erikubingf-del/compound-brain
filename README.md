@@ -224,24 +224,50 @@ runtime exceed the user’s declared ceiling.
 
 ## Repo skill matching
 
-Activated repos now keep a live repo skill inventory in:
+Every activated repo gets automatic skill discovery — no manual configuration.
 
-- `.brain/state/skills.json`
-- `.brain/knowledge/skills/skill-graph.md`
-- `.brain/knowledge/skills/patterns/*.md`
+On session start and cron, the runtime reads the project's observable signals
+(file extensions, package dependencies, language markers) and scores every
+available skill against them. Skills match by their declared `Trigger Signals`,
+not by hardcoded repo names.
 
-The runtime does this automatically on activation, session start, and cron:
+```
+session-start (any repo)
+  → skill-gap-detector evaluator (10s, file scan only)
+  → scores skills by Trigger Signals vs project signals
+  → missing match → added to recommended[], human notified
+  → pass → silent
 
-1. audit repo signals, stack, and enabled departments
-2. infer the missing capability surfaces the repo likely needs
-3. search repo-local skills first
-4. search global shared skills in `~/.claude/knowledge/skills/`
-5. search approved external skill roots such as installed Codex skills
-6. materialize the best-fit repo skills into the repo brain when confidence is high
-7. track active, stale, recommended, and missing skills for that repo
+daily cron
+  → skill-gap-detector (60s, includes HTTP)
+  → fetches skill-discovery-sources pack (registries + stack refs)
+  → new skill found with score ≥ 2 → proposed via promotion inbox
+  → existing skill stale → refresh diff proposed via promotion inbox
+  → human approves → skill enters active[]
+```
 
-This keeps each activated repo specialized without creating a parallel skill
-system outside the repo brain.
+See [`community/skills/RUNTIME.md`](community/skills/RUNTIME.md) for the full
+loop and budget rules.
+
+### Skill scopes
+
+Skills exist at three scopes, searched in order:
+
+| Scope | Location | Use for |
+|-------|----------|---------|
+| **Repo-local** | `.claude/skills/` or `.brain/knowledge/skills/` | Repo-specific overrides |
+| **Personal global** | `~/.claude/skills/` | Your private skills, all your repos |
+| **Org/team** | Private Git repo, added to source pack | Shared across team, not public |
+| **Community** | `community/skills/` in this repo | Public, peer-reviewed |
+
+For org/team sharing, see [`community/skills/SHARING.md`](community/skills/SHARING.md).
+
+### Skill state files
+
+- `.brain/state/skills.json` — active, recommended, stale, missing per repo
+- `.brain/knowledge/skills/skill-graph.md` — capability map
+- `.brain/knowledge/skills/patterns/*.md` — materialized skill patterns
+- `.brain/state/source-pack-cache.json` — last-fetched timestamps per source
 
 ## Heartbeats
 
