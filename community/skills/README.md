@@ -25,6 +25,11 @@ Use [TEMPLATE.md](./TEMPLATE.md) as the contribution shape.
 
 ## Available Skills
 
-| Skill | Best Fit | Trigger |
-|-------|----------|---------|
-| [ui-master](./ui-master/SKILL.md) | Next.js, React, SaaS frontend, dashboard, CRM | `.tsx`/`.jsx` present, UI/design request |
+| Skill | Best Fit | Trigger | Runtime |
+|-------|----------|---------|---------|
+| [ui-master](./ui-master/SKILL.md) | Next.js, React, SaaS frontend, dashboard, CRM | `.tsx`/`.jsx` present, UI/design request | [RUNTIME.md](./ui-master/RUNTIME.md) — session-start audit + cron source refresh |
+
+Skills with a `RUNTIME.md` have full runtime integration: the session-start hook
+auto-detects when the skill is needed, and the cron keeps it fresh by auditing
+approved source packs. Skills without a `RUNTIME.md` are passive — loaded only
+when explicitly invoked.
