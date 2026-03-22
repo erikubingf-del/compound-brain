@@ -74,6 +74,12 @@ Hook and cron wiring:
 - `project_llm_cron.py` dispatches to the shared runtime event engine
 - the shared engine refreshes audits, intelligence briefs, ranked actions, and bounded runtime cycles
 
+Operational trust layer:
+- heartbeat records live in `~/.claude/registry/runtime-heartbeats/`
+- lockfiles live in `~/.claude/registry/runtime-locks/`
+- cron failures enter backoff instead of silently flapping
+- watchdog reports missed or missing heartbeats to `~/.claude/knowledge/resources/runtime-heartbeats.md`
+
 ## Approval model
 
 Strategic approvals live in:

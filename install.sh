@@ -119,6 +119,7 @@ SCRIPTS=(
   "prepare_brain.py"
   "project_intelligence.py"
   "project_runtime_event.py"
+  "runtime_watchdog.py"
   "global_intelligence_sweeper.py"
   "intelligence_brief_hook.py"
   "project_auditor.py"
@@ -400,6 +401,9 @@ install_cron "COMPOUND_PROMOTION_APPLY" \
 
 install_cron "COMPOUND_ARCH_SCORECARD" \
   "45 1 * * * ${PYTHON_BIN} ${SCRIPTS_DIR}/update_architecture_scorecard.py --repo-root \"${REPO_DIR}\" >> /tmp/compound_arch_scorecard.log 2>&1 # COMPOUND_ARCH_SCORECARD"
+
+install_cron "COMPOUND_RUNTIME_WATCHDOG" \
+  "30 * * * * ${PYTHON_BIN} ${SCRIPTS_DIR}/runtime_watchdog.py >> /tmp/compound_runtime_watchdog.log 2>&1 # COMPOUND_RUNTIME_WATCHDOG"
 
 # ─── Step 7: Gitignore for brain ─────────────────────────────────────────────
 echo ""

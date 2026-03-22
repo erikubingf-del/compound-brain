@@ -6,17 +6,20 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 try:
+    from scripts.lib.runtime_heartbeat import RuntimeHeartbeatStore
     from scripts.project_auditor import audit_project
     from scripts.project_intelligence import run_for_project
     from scripts.probability_engine import ProjectState, rank_actions
     from scripts.run_project_llm_cron import run_project_cron
     from scripts.update_architecture_scorecard import main as update_architecture_scorecard_main
 except ModuleNotFoundError:
+    from lib.runtime_heartbeat import RuntimeHeartbeatStore
     from project_auditor import audit_project
     from project_intelligence import run_for_project
     from probability_engine import ProjectState, rank_actions
@@ -33,6 +36,14 @@ def claude_home_dir() -> Path:
 
 def activation_registry_path() -> Path:
     return claude_home_dir() / "registry" / "activated-projects.json"
+
+
+def heartbeat_store() -> RuntimeHeartbeatStore:
+    root = claude_home_dir() / "registry"
+    return RuntimeHeartbeatStore(
+        heartbeat_root=root / "runtime-heartbeats",
+        lock_root=root / "runtime-locks",
+    )
 
 
 def load_registry() -> list[dict[str, Any]]:
@@ -81,35 +92,83 @@ def maybe_update_scorecard(project_dir: Path) -> bool:
         os.sys.argv = previous_argv
 
 
+def classify_exception(exc: Exception) -> str:
+    return exc.__class__.__name__
+
+
 def run_project_runtime_event(project_dir: Path, event: str) -> dict[str, Any]:
     project_dir = project_dir.resolve()
     if not is_activated_repo(project_dir):
         return {"status": "skipped", "reason": "repo-not-activated", "event": event}
 
-    audit_refreshed = False
-    if event in {"session-start", "cron"} and audit_is_due(project_dir):
-        audit_refreshed = audit_project(project_dir, force=True)
+    store = heartbeat_store()
+    acquired, lock_info = store.acquire_lock(project_dir, event)
+    if not acquired:
+        return {
+            "status": "locked",
+            "reason": "runtime-lock-active",
+            "event": event,
+            "lock": lock_info,
+        }
 
-    brief = run_for_project(project_dir, dry_run=False)
-    ranking = refresh_ranked_actions(project_dir)
-    runtime: dict[str, Any] = {
-        "status": "ok",
-        "event": event,
-        "audit_refreshed": audit_refreshed,
-        "brief_written": bool(brief is not None),
-        "top_action": ranking["top_action"],
-        "goal": ranking["goal"],
-    }
+    start = time.monotonic()
+    store.mark_start(project_dir, event)
+    attempts = 2 if event == "cron" else 1
+    attempt = 0
+    try:
+        while attempt < attempts:
+            attempt += 1
+            try:
+                audit_refreshed = False
+                if event in {"session-start", "cron"} and audit_is_due(project_dir):
+                    audit_refreshed = audit_project(project_dir, force=True)
 
-    if event == "cron":
-        summary, rc = run_project_cron(project_dir, dry_run=False)
-        runtime["cron_summary"] = summary
-        runtime["cron_rc"] = rc
+                brief = run_for_project(project_dir, dry_run=False)
+                ranking = refresh_ranked_actions(project_dir)
+                runtime: dict[str, Any] = {
+                    "status": "ok",
+                    "event": event,
+                    "attempt": attempt,
+                    "audit_refreshed": audit_refreshed,
+                    "brief_written": bool(brief is not None),
+                    "top_action": ranking["top_action"],
+                    "goal": ranking["goal"],
+                }
 
-    if event == "stop":
-        runtime["scorecard_updated"] = maybe_update_scorecard(project_dir)
+                if event == "cron":
+                    summary, rc = run_project_cron(project_dir, dry_run=False)
+                    runtime["cron_summary"] = summary
+                    runtime["cron_rc"] = rc
+                    if rc != 0:
+                        raise RuntimeError(f"project-cron-rc-{rc}")
 
-    return runtime
+                if event == "stop":
+                    runtime["scorecard_updated"] = maybe_update_scorecard(project_dir)
+
+                duration = time.monotonic() - start
+                summary = runtime.get("cron_summary") or runtime.get("top_action")
+                store.mark_success(project_dir, event, duration_seconds=duration, summary=str(summary))
+                return runtime
+            except Exception as exc:
+                if attempt < attempts:
+                    continue
+                duration = time.monotonic() - start
+                store.mark_failure(
+                    project_dir,
+                    event,
+                    error_class=classify_exception(exc),
+                    error_message=str(exc),
+                    duration_seconds=duration,
+                )
+                return {
+                    "status": "failed",
+                    "reason": classify_exception(exc),
+                    "message": str(exc),
+                    "event": event,
+                    "attempt": attempt,
+                }
+    finally:
+        store.release_lock(project_dir)
 
 
 def main() -> int:

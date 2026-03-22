@@ -139,6 +139,19 @@ Activated repos also get real event loops:
 - `Stop` refreshes project state and updates self-hosting scorecards when relevant
 - repo cron refreshes audit and briefs, then runs department and autoresearch cycles
 
+## Heartbeats
+
+The runtime now records and reviews its own operational health:
+
+- per-repo heartbeat state under `~/.claude/registry/runtime-heartbeats/`
+- per-repo lockfiles under `~/.claude/registry/runtime-locks/`
+- failure backoff for cron-driven retries
+- watchdog report under `~/.claude/knowledge/resources/runtime-heartbeats.md`
+
+This means scheduled loops are not just configured. They leave evidence of the
+last run, last success, next due time, consecutive failures, and missed-heartbeat
+status.
+
 ## Autoresearch
 
 Autoresearch is fixed-evaluator only.
@@ -172,6 +185,7 @@ Implemented in the current MVP branch:
 - department contracts and state
 - bounded department-cycle runtime
 - shared project runtime event engine for session start, stop, and cron autoimprovement
+- heartbeat ledger, lockfiles, retry backoff, and watchdog reporting for activated repos
 - evaluator-backed autoresearch execution with keep/discard results
 - local skill promotion, global promotion inbox, scheduled review, and approved
   promotion application into canonical global knowledge
