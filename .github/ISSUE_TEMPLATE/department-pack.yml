@@ -1,0 +1,41 @@
+name: Department Pack
+description: Propose a reusable department operating model.
+title: "[Department]: "
+labels:
+  - community
+  - department
+body:
+  - type: input
+    id: name
+    attributes:
+      label: Department Name
+    validations:
+      required: true
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      description: What should this department optimize for?
+    validations:
+      required: true
+  - type: textarea
+    id: surfaces
+    attributes:
+      label: Owned And Protected Surfaces
+      description: What can it touch and what must it avoid?
+    validations:
+      required: true
+  - type: textarea
+    id: skills
+    attributes:
+      label: Required Skills And Sources
+      description: What skills and source packs should this department depend on?
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Where did this department model work well?
+    validations:
+      required: true

@@ -1,0 +1,34 @@
+name: Source Pack
+description: Propose an approved external source bundle for a department.
+title: "[Source Pack]: "
+labels:
+  - community
+  - source-pack
+body:
+  - type: input
+    id: department
+    attributes:
+      label: Department
+    validations:
+      required: true
+  - type: textarea
+    id: sources
+    attributes:
+      label: Approved Sources
+      description: List the exact repos, docs, APIs, or standards.
+    validations:
+      required: true
+  - type: textarea
+    id: search
+    attributes:
+      label: Search And Validation Rules
+      description: How should the runtime query and verify these sources?
+    validations:
+      required: true
+  - type: textarea
+    id: risk
+    attributes:
+      label: Risk And Anti-goals
+      description: What bad behavior should this pack prevent?
+    validations:
+      required: true

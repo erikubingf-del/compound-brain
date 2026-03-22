@@ -66,6 +66,33 @@ orchestrator:
 - project-specific skills, QMP, and decisions accumulate in `.brain/`
 - strategic changes still go through approvals instead of silent drift
 
+## Community growth model
+
+The repo should improve with the community through bounded contribution lanes,
+not by letting every contribution modify the orchestration kernel directly.
+
+Community-first lanes live in:
+
+- `community/skills/`
+- `community/departments/`
+- `community/source-packs/`
+- `community/evaluators/`
+- `community/case-studies/`
+- `community/benchmarks/`
+- `community/promotions/`
+
+This lets people contribute:
+
+- better skills for specific repo types
+- department operating models
+- approved source packs for safe external research
+- fixed evaluators for bounded autonomy
+- case studies showing real activated-repo outcomes
+- benchmarks that prove whether changes actually help
+
+Maintainers can then review and promote the best artifacts into templates,
+knowledge seeds, or runtime defaults.
+
 ## Why this shape
 
 - Non-activated repos stay read-only.

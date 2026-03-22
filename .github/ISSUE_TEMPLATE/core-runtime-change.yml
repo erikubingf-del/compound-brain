@@ -1,0 +1,39 @@
+name: Core Runtime Change
+description: Propose a change to the orchestration kernel, policies, or runtime rules.
+title: "[Core]: "
+labels:
+  - core
+  - review-required
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Core runtime changes are reviewed more strictly than community lane changes.
+        Prefer skills, department packs, source packs, evaluators, case studies, or benchmarks unless the kernel truly must change.
+  - type: textarea
+    id: reason
+    attributes:
+      label: Why This Must Touch The Core
+    validations:
+      required: true
+  - type: textarea
+    id: contract
+    attributes:
+      label: Runtime Contract Impact
+      description: Which control-plane files, policies, or runtime guarantees change?
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: What failures, benchmarks, or case studies justify this?
+    validations:
+      required: true
+  - type: textarea
+    id: migration
+    attributes:
+      label: Migration And Risk
+      description: How will existing users and activated repos stay safe?
+    validations:
+      required: true

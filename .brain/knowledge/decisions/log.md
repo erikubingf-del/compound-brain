@@ -271,3 +271,28 @@ tests and verified by the full unittest suite plus installer dry-run.
 department agreement, not from point-in-time score alone.
 
 ---
+
+## DEC-012 — Community contributions should land in bounded lanes before touching the runtime core
+**Date:** 2026-03-22
+**Priority:** P2
+**Context:** After the main activation/runtime system became coherent, the next
+growth challenge was how to let the community improve the project without
+turning the orchestration kernel into an unreviewable stream of ad hoc ideas.
+**Options Considered:**
+- Accept most community changes directly into the core runtime
+- Keep community input mostly in discussions and ad hoc issues
+- Add explicit contribution lanes for skills, departments, source packs,
+  evaluators, case studies, benchmarks, and promotion candidates
+**Reasoning:** The system needs outside learning, but it also needs a stable
+control plane. Bounded contribution lanes let the community provide evidence,
+patterns, and reusable building blocks while maintainers preserve the kernel’s
+approval, depth, and runtime guarantees.
+**Expected Outcome:** Contributors have clear places to submit high-value work,
+maintainers have a promotion workflow, and the runtime improves through
+evidence-backed artifacts rather than noisy direct mutation.
+**Actual Outcome:** Implemented through `community/`, GitHub issue forms, a PR
+template, and maintainer review docs.
+**Rule established:** Default community growth goes through bounded lanes first;
+core runtime changes require stronger evidence and review.
+
+---

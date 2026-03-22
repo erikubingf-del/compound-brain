@@ -1,0 +1,39 @@
+name: Case Study
+description: Report an activated repo outcome with evidence.
+title: "[Case Study]: "
+labels:
+  - community
+  - case-study
+body:
+  - type: input
+    id: repo
+    attributes:
+      label: Repo
+      description: Public repo link or anonymized repo type.
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal And Activation State
+    validations:
+      required: true
+  - type: textarea
+    id: improvement
+    attributes:
+      label: What Improved
+    validations:
+      required: true
+  - type: textarea
+    id: failures
+    attributes:
+      label: What Failed Or Drifted
+    validations:
+      required: true
+  - type: textarea
+    id: metrics
+    attributes:
+      label: Metrics Or Signals
+      description: Numbers, screenshots, timing, failure reduction, or quality changes.
+    validations:
+      required: true

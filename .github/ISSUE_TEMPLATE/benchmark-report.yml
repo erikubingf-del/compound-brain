@@ -1,0 +1,32 @@
+name: Benchmark Report
+description: Propose or report a repeatable benchmark for compound-brain.
+title: "[Benchmark]: "
+labels:
+  - community
+  - benchmark
+body:
+  - type: input
+    id: question
+    attributes:
+      label: Benchmark Question
+    validations:
+      required: true
+  - type: textarea
+    id: setup
+    attributes:
+      label: Setup
+      description: Compared variants, repo type, and environment.
+    validations:
+      required: true
+  - type: textarea
+    id: metric
+    attributes:
+      label: Metric And Procedure
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Result
+    validations:
+      required: true

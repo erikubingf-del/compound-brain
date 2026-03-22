@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Community Contribution Guide
+    url: https://github.com/erikubingf-del/compound-brain/tree/main/community
+    about: Start here for skills, departments, source packs, evaluators, case studies, and promotions.
+  - name: Maintainer Review Workflow
+    url: https://github.com/erikubingf-del/compound-brain/blob/main/docs/community-maintainers.md
+    about: Read how promotion and review should work before proposing core runtime changes.

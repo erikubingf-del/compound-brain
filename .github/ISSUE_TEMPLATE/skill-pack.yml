@@ -1,0 +1,42 @@
+name: Skill Pack
+description: Propose a reusable skill for activated repos or the global orchestrator.
+title: "[Skill]: "
+labels:
+  - community
+  - skill
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Capability Gap
+      description: What recurring problem does this skill solve?
+    validations:
+      required: true
+  - type: textarea
+    id: fit
+    attributes:
+      label: Best Fit
+      description: Which repo types, departments, and depth ranges should use it?
+    validations:
+      required: true
+  - type: textarea
+    id: process
+    attributes:
+      label: Process
+      description: What should the skill make the runtime do?
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation Path
+      description: How would the system know this skill helped instead of hurt?
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Link a repo, benchmark, or case study.
+    validations:
+      required: true

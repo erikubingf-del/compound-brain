@@ -78,6 +78,11 @@ Out of scope for v1:
   history, healthy streaks, and agreement-aware depth movement so operations or
   architecture objections can push higher-depth cron work back into planning
   instead of letting execution continue blindly
+- The repo now also exposes bounded community contribution lanes under
+  `community/` plus GitHub issue and PR templates so users can contribute
+  skills, department packs, source packs, evaluators, case studies,
+  benchmarks, and promotion candidates without pushing directly on the runtime
+  kernel
 - The full branch verification passed: `python3 -m unittest discover -s tests -p
   'test_*.py' -v`, `bash install.sh --dry-run`, and end-to-end preview/prepare/
   activate smoke tests
@@ -94,6 +99,8 @@ Out of scope for v1:
 - Repo-aware skill discovery and materialization for activated repos
 - Policy-driven autonomy depth with trust-governed execution lanes
 - Cross-department agreement as a first-class runtime gate
+- Community contribution lanes with promotion-oriented review instead of direct
+  runtime mutation
 
 ## Key Decisions
 - Make the public product an actionable Claude skill run inside a repo
@@ -132,6 +139,10 @@ Out of scope for v1:
   approved external skill inventory grows
 - Deepen department execution once the new arbitration and trust-history gates
   have stabilized under more realistic project workloads
+- Seed the new community lanes with exemplar contributions for `frontend`,
+  `backend`, and `finance`
+- Open the first benchmark and case study issues to create visible community
+  loops around real activated repos
 - Decide whether to merge `codex/activate-repo-mvp` or keep iterating in branch
 
 ## Links

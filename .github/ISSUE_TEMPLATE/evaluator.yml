@@ -1,0 +1,33 @@
+name: Evaluator
+description: Propose a fixed evaluator for bounded execution or autoresearch.
+title: "[Evaluator]: "
+labels:
+  - community
+  - evaluator
+body:
+  - type: input
+    id: repo-type
+    attributes:
+      label: Repo Type
+    validations:
+      required: true
+  - type: textarea
+    id: contract
+    attributes:
+      label: Evaluator Contract
+      description: Run command, metric extraction, keep or discard rule, and runtime budget.
+    validations:
+      required: true
+  - type: textarea
+    id: surfaces
+    attributes:
+      label: Mutable And Protected Surfaces
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Why is this evaluator strong enough to gate autonomous work?
+    validations:
+      required: true
