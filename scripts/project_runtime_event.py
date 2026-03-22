@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 try:
+    from scripts.lib.agent_registry import register_session
     from scripts.lib.autonomy_depth import (
         apply_governor_to_depth_state,
         load_global_policy,
@@ -36,6 +37,7 @@ try:
     from scripts.run_project_llm_cron import run_project_cron
     from scripts.update_architecture_scorecard import main as update_architecture_scorecard_main
 except ModuleNotFoundError:
+    from lib.agent_registry import register_session
     from lib.autonomy_depth import (
         apply_governor_to_depth_state,
         load_global_policy,
@@ -145,6 +147,16 @@ def run_project_runtime_event(project_dir: Path, event: str) -> dict[str, Any]:
     project_dir = project_dir.resolve()
     if not is_activated_repo(project_dir):
         return {"status": "skipped", "reason": "repo-not-activated", "event": event}
+
+    # ── Agent registry — fires on every session-start, silent on cron/stop ──
+    if event == "session-start":
+        try:
+            reg = register_session(project_dir)
+            print(f"Session loaded. Registering as Agent-{reg['agent_id']} in {reg['registry_path']}.")
+            if reg["last_task"]:
+                print(f"Last session: {reg['last_task']}")
+        except Exception:
+            pass  # never block session start
 
     store = heartbeat_store()
     acquired, lock_info = store.acquire_lock(project_dir, event)
