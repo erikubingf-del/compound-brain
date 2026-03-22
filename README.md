@@ -145,6 +145,8 @@ It runs from:
 - `.brain/autoresearch/queue.md`
 
 Without explicit approval and a valid program contract, it does not run.
+When enabled, repo cron now executes the evaluator, records baseline and result
+artifacts, and makes a bounded keep/discard decision from the configured rule.
 
 ## Self-hosting
 
@@ -164,11 +166,13 @@ Implemented in the current MVP branch:
 - activation approvals
 - department contracts and state
 - bounded department-cycle runtime
-- autoresearch program parsing and runner skeleton
-- local skill promotion and global promotion inbox
-- self-hosting evaluator surfaces
+- evaluator-backed autoresearch execution with keep/discard results
+- local skill promotion, global promotion inbox, scheduled review, and approved
+  promotion application into canonical global knowledge
+- self-hosting evaluator surfaces plus scorecard automation
+- managed Codex bootstrap and shared nightly review wrapper
 
 Still evolving:
 - deeper execution logic inside department cycles
-- richer keep/discard experiment execution
-- stronger self-hosting canary and scorecard automation
+- worktree-isolated experiment mutations beyond bounded evaluator runs
+- richer promotion authoring from departments into global QMP/skills/decisions

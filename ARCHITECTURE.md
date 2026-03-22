@@ -102,6 +102,13 @@ Project-local skill promotion:
 Cross-project candidates:
 - `~/.claude/knowledge/promotions/inbox.md`
 - `~/.claude/knowledge/promotions/*.json`
+- `~/.claude/scripts/review_promotion_inbox.py`
+- `~/.claude/scripts/apply_approved_promotions.py`
+
+Promotion flow:
+- repo submits candidate
+- global review loop generates review artifact
+- approved candidates are applied to canonical global knowledge
 
 ## Self-hosting exception
 
@@ -110,5 +117,7 @@ Cross-project candidates:
 It self-improves against:
 - `.brain/architecture/evaluator.md`
 - `.brain/architecture/scorecard.json`
+- `scripts/update_architecture_scorecard.py`
+- `scripts/nightly_review.sh`
 
 The evaluator is approval-gated and cannot be silently rewritten by the runtime.

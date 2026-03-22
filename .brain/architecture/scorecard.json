@@ -1,15 +1,29 @@
 {
   "baseline": {
-    "deterministic_gates": "pending",
-    "architecture_rubric": "pending",
-    "canary_behavior": "pending"
+    "deterministic_gates": "pass",
+    "architecture_rubric": "pass",
+    "canary_behavior": "pass"
   },
   "current": {
-    "deterministic_gates": "pending",
-    "architecture_rubric": "pending",
-    "canary_behavior": "pending"
+    "deterministic_gates": "pass",
+    "architecture_rubric": "pass",
+    "canary_behavior": "pass"
   },
-  "decision": "pending",
-  "updated_at": "2026-03-21T00:00:00Z"
+  "details": {
+    "deterministic_gates": {
+      "Unit tests must pass": true,
+      "Installer dry-run must pass": true,
+      "Activation smoke test must pass": true
+    },
+    "architecture_rubric": {
+      "Control-plane integrity": "pass",
+      "Claude/Codex parity": "pass",
+      "Approval safety": "pass",
+      "Upgradeability": "pass",
+      "Autonomy boundedness": "pass",
+      "Observability and log quality": "pass"
+    }
+  },
+  "decision": "keep",
+  "updated_at": "2026-03-22T01:19:03Z"
 }
-

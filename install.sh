@@ -110,10 +110,12 @@ ok "Directories created"
 echo ""
 echo "[ 2/7 ] Installing scripts..."
 SCRIPTS=(
+  "apply_approved_promotions.py"
   "activate_repo.py"
   "architecture_radar.py"
   "bootstrap_codex_runtime.py"
   "materialize_project_claude.py"
+  "nightly_review.sh"
   "prepare_brain.py"
   "project_intelligence.py"
   "global_intelligence_sweeper.py"
@@ -122,9 +124,9 @@ SCRIPTS=(
   "probability_engine.py"
   "review_promotion_inbox.py"
   "run_project_llm_cron.py"
+  "update_architecture_scorecard.py"
   "github_intelligence.py"
   "setup_brain.sh"
-  "nightly_review.sh"
 )
 for script in "${SCRIPTS[@]}"; do
   src="${REPO_DIR}/scripts/${script}"
@@ -268,7 +270,6 @@ echo ""
 echo "[ 4/7 ] Configuring Claude Code hooks..."
 
 HOOK_SCRIPT="${SCRIPTS_DIR}/intelligence_brief_hook.py"
-HEALTH_SCRIPT="${SCRIPTS_DIR}/universal_project_health.py"
 SESSION_END_SCRIPT="${SCRIPTS_DIR}/nightly_review.sh"
 PROJECT_CRON_SCRIPT="${SCRIPTS_DIR}/run_project_llm_cron.py"
 
@@ -301,7 +302,7 @@ if [[ ! -f "$SETTINGS_FILE" ]]; then
         "hooks": [
           {
             "type": "command",
-            "command": "${PYTHON_BIN} \"${SCRIPTS_DIR}/nightly_review.sh\" 2>/dev/null",
+            "command": "bash \"${SCRIPTS_DIR}/nightly_review.sh\" 2>/dev/null",
             "timeout": 8
           }
         ]
@@ -381,6 +382,12 @@ install_cron "COMPOUND_ARCH_GUARDIAN" \
 
 install_cron "COMPOUND_PROMOTION_REVIEW" \
   "15 */6 * * * ${PYTHON_BIN} ${SCRIPTS_DIR}/review_promotion_inbox.py >> /tmp/compound_promotion_review.log 2>&1 # COMPOUND_PROMOTION_REVIEW"
+
+install_cron "COMPOUND_PROMOTION_APPLY" \
+  "20 */6 * * * ${PYTHON_BIN} ${SCRIPTS_DIR}/apply_approved_promotions.py >> /tmp/compound_promotion_apply.log 2>&1 # COMPOUND_PROMOTION_APPLY"
+
+install_cron "COMPOUND_ARCH_SCORECARD" \
+  "45 1 * * * ${PYTHON_BIN} ${SCRIPTS_DIR}/update_architecture_scorecard.py --repo-root \"${REPO_DIR}\" >> /tmp/compound_arch_scorecard.log 2>&1 # COMPOUND_ARCH_SCORECARD"
 
 # ─── Step 7: Gitignore for brain ─────────────────────────────────────────────
 echo ""

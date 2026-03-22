@@ -21,6 +21,7 @@ class PromotionInbox:
         title: str,
         summary: str,
         target_kind: str,
+        details: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         self.root.mkdir(parents=True, exist_ok=True)
         inbox_path = self.root / "inbox.md"
@@ -34,6 +35,8 @@ class PromotionInbox:
             "status": "pending-review",
             "created_at": now_utc(),
         }
+        if details:
+            record.update(details)
         (self.root / f"{record_id}.json").write_text(json.dumps(record, indent=2) + "\n")
 
         lines = []

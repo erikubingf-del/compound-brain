@@ -9,10 +9,12 @@ import os
 from pathlib import Path
 
 try:
+    from scripts.lib.autoresearch_runner import run_autoresearch_cycle
     from scripts.lib.department_cycle import run_department_cycle
     from scripts.lib.promotion_inbox import PromotionInbox
     from scripts.lib.skill_evolution import promote_skill_pattern
 except ModuleNotFoundError:
+    from lib.autoresearch_runner import run_autoresearch_cycle
     from lib.department_cycle import run_department_cycle
     from lib.promotion_inbox import PromotionInbox
     from lib.skill_evolution import promote_skill_pattern
@@ -59,6 +61,17 @@ def run_project_cron(project_dir: Path, dry_run: bool = False) -> tuple[str, int
         return (f"[dry-run] {', '.join(departments)}", 0)
 
     results = [run_department_cycle(project_dir, department) for department in departments]
+    autoresearch_program = project_dir / ".brain" / "autoresearch" / "program.md"
+    if autoresearch_program.exists():
+        research_department = "research" if "research" in departments else departments[0]
+        autoresearch_result = run_autoresearch_cycle(project_dir, research_department)
+        results.append(
+            {
+                "department": "autoresearch",
+                "status": autoresearch_result["status"],
+                "reason": autoresearch_result.get("reason", ""),
+            }
+        )
     inbox = PromotionInbox(claude_home_dir() / "knowledge" / "promotions")
     for result in results:
         if result.get("skill_promotion"):
@@ -72,11 +85,17 @@ def run_project_cron(project_dir: Path, dry_run: bool = False) -> tuple[str, int
             )
         if result.get("cross_project_candidate"):
             candidate = result["cross_project_candidate"]
+            details = {
+                key: value
+                for key, value in candidate.items()
+                if key not in {"title", "summary", "target_kind"}
+            }
             inbox.submit_candidate(
                 source_repo=project_dir.name,
                 title=str(candidate["title"]),
                 summary=str(candidate["summary"]),
                 target_kind=str(candidate["target_kind"]),
+                details=details or None,
             )
     summary = ", ".join(
         f"{result['department']}={result['status']}" for result in results

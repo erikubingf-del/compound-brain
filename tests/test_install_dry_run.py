@@ -14,3 +14,4 @@ class InstallDryRunTests(unittest.TestCase):
 
         self.assertIn("activate-repo", result.stdout)
         self.assertIn("registry", result.stdout)
+        self.assertNotIn("Not found (skipping): nightly_review.sh", result.stdout)
