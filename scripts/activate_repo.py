@@ -252,19 +252,63 @@ def infer_recommended_project_goal(
             # project_context.md exists but has no Goal section — use fallback, not inference
             return fallback
 
-    # Inference: require co-occurring domain-specific signals.
-    # Avoid matching generic words like "risk", "strategy", "execution" that appear
-    # in any business or software repo and cause false positives.
+    # Domain inference — scored by co-occurring specific signals, not single generic words.
+    # Each domain requires at least 2 hits from its signal list to avoid false positives.
     lowered = repo_text.lower()
-    trading_specific = ["backtest", "alpha generation", "order book", "market microstructure", "tick data"]
-    trading_generic = ["trading", "portfolio", "position sizing", "drawdown", "sharpe ratio"]
-    specific_hits = sum(1 for t in trading_specific if t in lowered)
-    generic_hits = sum(1 for t in trading_generic if t in lowered)
-    if specific_hits >= 1 or generic_hits >= 2:
-        return (
-            f"Operate {repo_name} as a trading system that improves strategy quality, "
-            "execution safety, and risk-aware iteration through evaluator-backed decisions."
-        )
+
+    domains: list[tuple[int, str]] = []
+
+    def score(terms: list[str]) -> int:
+        return sum(1 for t in terms if t in lowered)
+
+    # Trading / quant finance
+    if score(["backtest", "alpha generation", "order book", "market microstructure", "tick data"]) >= 1 \
+            or score(["trading", "portfolio", "position sizing", "drawdown", "sharpe ratio"]) >= 2:
+        domains.append((score(["backtest", "trading", "portfolio", "alpha", "drawdown"]),
+                        f"Operate {repo_name} as a trading system that improves strategy quality, "
+                        "execution safety, and risk-aware iteration through evaluator-backed decisions."))
+
+    # SaaS / B2B product
+    if score(["tenant", "subscription", "billing", "onboarding", "saas", "crm", "multi-tenant"]) >= 2:
+        domains.append((score(["tenant", "subscription", "billing", "saas", "crm"]),
+                        f"Ship and operate {repo_name} as a reliable SaaS product — "
+                        "typed, tested, and observable — with tenant isolation and safe migrations."))
+
+    # ML / data science
+    if score(["training", "model", "dataset", "inference", "embedding", "fine-tune", "pytorch", "tensorflow"]) >= 2:
+        domains.append((score(["training", "model", "dataset", "inference", "embedding"]),
+                        f"Build and evaluate {repo_name} as an ML system — "
+                        "reproducible experiments, versioned models, and grounded inference pipelines."))
+
+    # API / backend service
+    if score(["rest api", "graphql", "grpc", "microservice", "endpoint", "middleware", "postgres", "redis"]) >= 2:
+        domains.append((score(["api", "endpoint", "middleware", "postgres", "redis"]),
+                        f"Build and operate {repo_name} as a reliable backend service — "
+                        "typed contracts, tested handlers, safe migrations, and observable production."))
+
+    # Frontend / design system
+    if score(["component", "storybook", "design system", "tailwind", "figma", "accessibility", "responsive"]) >= 2:
+        domains.append((score(["component", "design system", "tailwind", "accessibility"]),
+                        f"Build {repo_name} as a high-quality frontend — "
+                        "accessible, responsive components with a consistent design system."))
+
+    # DevOps / infra
+    if score(["terraform", "kubernetes", "helm", "dockerfile", "ci/cd", "pipeline", "deploy", "infra"]) >= 2:
+        domains.append((score(["terraform", "kubernetes", "dockerfile", "pipeline", "infra"]),
+                        f"Operate {repo_name} as a reliable infrastructure layer — "
+                        "reproducible environments, safe deploys, and observable production systems."))
+
+    # CLI / developer tool
+    if score(["cli", "command-line", "argparse", "cobra", "clap", "subcommand", "flag"]) >= 2:
+        domains.append((score(["cli", "command-line", "subcommand"]),
+                        f"Build {repo_name} as a polished developer CLI — "
+                        "discoverable commands, clear errors, and tested end-to-end flows."))
+
+    if domains:
+        # Return the goal from the highest-scoring domain
+        domains.sort(key=lambda x: -x[0])
+        return domains[0][1]
+
     return fallback
 
 

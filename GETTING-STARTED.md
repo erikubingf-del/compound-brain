@@ -224,12 +224,51 @@ mkdir ~/.claude/skills/my-skill
 
 ---
 
-## What to do first after activation
+## What to do before and after activation
 
-1. Edit `.brain/memory/project_context.md` — confirm the goal the runtime inferred
-2. Edit `.brain/memory/feedback_rules.md` — tell the AI how you want it to behave
-3. Open the repo in Claude Code or Codex — session-start hook fires, skills are scored
-4. Approve or reject the first skill recommendations in `.brain/state/skills.json`
-5. Watch the first department cycle run — check `.brain/knowledge/daily/` for the log
+### Before running activate_repo.py (do this first)
+
+Write `.brain/memory/project_context.md` before activating. This is the single
+most important step — it tells the runtime what the repo actually is, prevents
+any cross-repo goal inference, and gives every future session the right context
+from day one.
+
+Minimum viable `project_context.md`:
+
+```markdown
+# Project Context — your-repo-name
+
+## Goal
+One sentence: what this repo ships and for whom.
+
+## Stack
+Languages, frameworks, databases, infra.
+
+## Domain
+What kind of product/service this is (SaaS, API, ML system, CLI, etc.)
+
+## Hard Rules
+Non-negotiable constraints the AI must follow in this repo.
+```
+
+Then run:
+
+```bash
+# Step 1 — prepare (writes .brain/ scaffold)
+python3 ~/.claude/scripts/prepare_brain.py /path/to/repo
+
+# Step 2 — write project_context.md NOW, before activate
+# (your goal will be used directly — no inference, no bleed)
+
+# Step 3 — activate
+python3 ~/.claude/scripts/activate_repo.py --project-dir /path/to/repo
+```
+
+### After activation
+
+1. Edit `.brain/memory/feedback_rules.md` — how you want the AI to behave
+2. Open the repo in Claude Code or Codex — session-start hook fires, skills scored
+3. Approve or reject skill recommendations in `.brain/state/skills.json`
+4. Watch the first department cycle — check `.brain/knowledge/daily/` for the log
 
 That is the full loop. Everything else is the same pattern at larger scale.
