@@ -323,3 +323,22 @@ eligible cron lanes, and only when depth, trust, healthy streak, approvals, and
 department agreement all pass the Ralph policy gate.
 
 ---
+
+## DEC-004 — Add pre-tool-use write guard for protected surfaces
+**Date:** 2026-03-22
+**Priority:** P1
+**Context:** Department contracts define protected surfaces (e.g. lib/storage/, .env.local,
+evaluator contracts) but nothing technically prevents either Claude Code or Codex from
+writing to them. Rules are instruction-based, not enforced. An LLM can skip them.
+**Options Considered:**
+- Option A: Pre-tool-use hook that checks write path against department protected surfaces
+- Option B: Filesystem permissions (chmod) on protected paths
+- Option C: Leave as instruction-only (current state)
+**Reasoning:** Option A is the right layer — hooks fire before every tool use, can read
+department contracts, and can block writes to protected paths without breaking normal flow.
+Option B is fragile (permissions get reset). Option C is the current gap.
+**Expected Outcome:** Any write attempt to a protected surface is blocked by the hook,
+logged to .brain/knowledge/areas/skill-health.md, and surfaced to the human.
+**Rule established:** Implement `pre_tool_use_write_guard.py` hook that reads
+`.claude/departments/*.md` Protected Surfaces sections and blocks writes to listed paths.
+Both Claude Code and Codex must be wired to this hook.
