@@ -344,6 +344,11 @@ if [[ ! -f "$SETTINGS_FILE" ]]; then
       {
         "hooks": [
           {
+            "type": "prompt",
+            "prompt": "Before this session ends, check if you have written the session's high-signal work to the knowledge base. If a .brain/ directory exists in the current working directory, you MUST: (1) append today's meaningful decisions, changes, and next actions to .brain/knowledge/daily/YYYY-MM-DD.md (use today's actual date), (2) update .brain/knowledge/projects/<project>.md if project state changed. If no .brain/ exists, write to ~/.claude/knowledge/daily/YYYY-MM-DD.md instead. Only skip if the session had no meaningful technical work (e.g. only questions answered). Do this now using the Write or Edit tool.",
+            "timeout": 30
+          },
+          {
             "type": "command",
             "command": "bash \"${SCRIPTS_DIR}/nightly_review.sh\" 2>/dev/null",
             "timeout": 8
