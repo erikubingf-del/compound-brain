@@ -145,6 +145,43 @@ Accessibility: alt text, labeled inputs, not color-only, reduced-motion, semanti
   — in that case, read the existing system first and extend it
 - Not for microservices, API routes, or backend-only work
 
+## Compatibility
+
+This skill is tool-agnostic — it contains no tool-specific API calls and works
+as plain instructions with any LLM coding assistant that supports skill loading.
+
+| Tool | Skill path | Notes |
+|------|-----------|-------|
+| **Claude Code** | `~/.claude/skills/ui-master/` | Loaded automatically via `SKILL.md` frontmatter |
+| **Codex** | `~/.agents/skills/ui-master/` | Symlink from `~/.codex/skills/ui-master/` |
+| **OpenCode** | `~/.config/opencode/skills/ui-master/` | Loaded via native `skill` tool |
+| **Project-local (any tool)** | `.claude/skills/ui-master/` or `.opencode/skills/ui-master/` | Takes precedence over global — use when you want a repo-specific variant |
+
+**Installation (Claude Code):**
+```bash
+cp -r community/skills/ui-master ~/.claude/skills/ui-master
+```
+
+**Installation (Codex):**
+```bash
+mkdir -p ~/.agents/skills
+cp -r community/skills/ui-master ~/.agents/skills/ui-master
+```
+
+**Installation (OpenCode):**
+```bash
+cp -r community/skills/ui-master ~/.config/opencode/skills/ui-master
+```
+
+**Project-local (any tool):**
+```bash
+mkdir -p .claude/skills   # or .opencode/skills
+cp -r community/skills/ui-master .claude/skills/ui-master
+```
+
+Project-local always wins. Use it when the global skill needs repo-specific
+overrides (different tone defaults, different stack, company-specific rules).
+
 ## Evidence
 
 - **Repo:** `/Users/erikfigueiredo/crm` — Next.js 16 SaaS CRM
