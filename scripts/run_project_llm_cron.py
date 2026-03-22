@@ -58,6 +58,9 @@ def run_project_cron(
     project_dir: Path,
     dry_run: bool = False,
     refresh_skills: bool = True,
+    current_depth: int | None = None,
+    lead_department: str | None = None,
+    supporting_departments: list[str] | None = None,
 ) -> tuple[str, int]:
     departments = enabled_departments(project_dir)
     if not departments:
@@ -70,10 +73,23 @@ def run_project_cron(
     if refresh_skills:
         skill_state = refresh_repo_skill_state(project_dir, claude_home=claude_home_dir())
 
-    results = [run_department_cycle(project_dir, department) for department in departments]
+    if current_depth is not None and current_depth <= 2:
+        summary = "planning-only"
+        if skill_state is not None:
+            summary += f" skills=active:{len(skill_state['active'])}/missing:{len(skill_state['missing'])}"
+        return (summary, 0)
+
+    selected_departments = list(departments)
+    if lead_department:
+        selected_departments = [lead_department]
+        for item in supporting_departments or []:
+            if item in departments and item not in selected_departments:
+                selected_departments.append(item)
+
+    results = [run_department_cycle(project_dir, department) for department in selected_departments]
     autoresearch_program = project_dir / ".brain" / "autoresearch" / "program.md"
-    if autoresearch_program.exists():
-        research_department = "research" if "research" in departments else departments[0]
+    if autoresearch_program.exists() and (current_depth is None or current_depth >= 4):
+        research_department = "research" if "research" in selected_departments else selected_departments[0]
         autoresearch_result = run_autoresearch_cycle(project_dir, research_department)
         results.append(
             {

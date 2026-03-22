@@ -18,4 +18,9 @@ class DepartmentStateTests(unittest.TestCase):
             payload = json.loads(state_path.read_text())
             self.assertEqual(payload["status"], "idle")
             self.assertEqual(payload["approval_state"], "pending")
-
+            self.assertTrue(
+                (repo / ".brain" / "knowledge" / "departments" / "architecture-sources.md").exists()
+            )
+            self.assertTrue(
+                (repo / ".brain" / "state" / "departments" / "architecture-shopping.json").exists()
+            )

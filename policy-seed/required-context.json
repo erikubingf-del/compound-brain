@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "events": {
+    "session-start": {
+      "1": [
+        "CLAUDE.md",
+        ".brain/MEMORY.md",
+        ".brain/memory/project_context.md",
+        ".brain/memory/feedback_rules.md"
+      ],
+      "2": [
+        "CLAUDE.md",
+        ".brain/MEMORY.md",
+        ".brain/memory/project_context.md",
+        ".brain/memory/feedback_rules.md",
+        ".brain/state/action-queue.md",
+        ".brain/state/skills.json",
+        ".brain/knowledge/projects/{repo_name}.md"
+      ],
+      "3": [
+        "CLAUDE.md",
+        ".brain/MEMORY.md",
+        ".brain/memory/project_context.md",
+        ".brain/memory/feedback_rules.md",
+        ".brain/state/action-queue.md",
+        ".brain/state/skills.json",
+        ".brain/state/approval-state.json",
+        ".claude/settings.local.json",
+        ".claude/departments/{lead_department}.md"
+      ],
+      "4": [
+        "CLAUDE.md",
+        ".brain/MEMORY.md",
+        ".brain/memory/project_context.md",
+        ".brain/memory/feedback_rules.md",
+        ".brain/state/action-queue.md",
+        ".brain/state/skills.json",
+        ".brain/state/approval-state.json",
+        ".brain/state/runtime-governor.json",
+        ".claude/settings.local.json",
+        ".claude/departments/{lead_department}.md",
+        ".brain/autoresearch/program.md"
+      ],
+      "5": [
+        "CLAUDE.md",
+        ".brain/MEMORY.md",
+        ".brain/memory/project_context.md",
+        ".brain/memory/feedback_rules.md",
+        ".brain/state/action-queue.md",
+        ".brain/state/skills.json",
+        ".brain/state/approval-state.json",
+        ".brain/state/runtime-governor.json",
+        ".brain/state/department-health.json",
+        ".claude/settings.local.json",
+        ".claude/departments/{lead_department}.md",
+        ".brain/knowledge/departments/{lead_department}-sources.md",
+        ".brain/autoresearch/program.md"
+      ]
+    },
+    "cron": {
+      "2": [
+        ".brain/state/action-queue.md",
+        ".brain/state/skills.json",
+        ".brain/state/autonomy-depth.json"
+      ],
+      "3": [
+        ".brain/state/action-queue.md",
+        ".brain/state/skills.json",
+        ".brain/state/approval-state.json",
+        ".brain/state/autonomy-depth.json",
+        ".claude/settings.local.json",
+        ".claude/departments/{lead_department}.md"
+      ],
+      "4": [
+        ".brain/state/action-queue.md",
+        ".brain/state/skills.json",
+        ".brain/state/approval-state.json",
+        ".brain/state/autonomy-depth.json",
+        ".brain/state/runtime-governor.json",
+        ".claude/settings.local.json",
+        ".claude/departments/{lead_department}.md",
+        ".brain/autoresearch/program.md"
+      ],
+      "5": [
+        ".brain/state/action-queue.md",
+        ".brain/state/skills.json",
+        ".brain/state/approval-state.json",
+        ".brain/state/autonomy-depth.json",
+        ".brain/state/runtime-governor.json",
+        ".brain/state/department-health.json",
+        ".claude/settings.local.json",
+        ".claude/departments/{lead_department}.md",
+        ".brain/knowledge/departments/{lead_department}-sources.md",
+        ".brain/autoresearch/program.md"
+      ]
+    },
+    "stop": {
+      "2": [
+        ".brain/state/action-queue.md",
+        ".brain/state/skills.json"
+      ],
+      "3": [
+        ".brain/state/action-queue.md",
+        ".brain/state/skills.json",
+        ".brain/state/approval-state.json",
+        ".brain/state/runtime-governor.json"
+      ],
+      "4": [
+        ".brain/state/action-queue.md",
+        ".brain/state/skills.json",
+        ".brain/state/approval-state.json",
+        ".brain/state/runtime-governor.json",
+        ".brain/autoresearch/program.md"
+      ],
+      "5": [
+        ".brain/state/action-queue.md",
+        ".brain/state/skills.json",
+        ".brain/state/approval-state.json",
+        ".brain/state/runtime-governor.json",
+        ".brain/state/department-health.json",
+        ".brain/autoresearch/program.md"
+      ]
+    }
+  }
+}

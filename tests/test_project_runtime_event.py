@@ -14,6 +14,7 @@ class ProjectRuntimeEventTests(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             repo = Path(tmp)
             subprocess.run(["git", "init"], cwd=str(repo), check=False, capture_output=True, text=True)
+            (repo / ".brain" / "knowledge" / "projects").mkdir(parents=True)
             (repo / ".brain" / "memory").mkdir(parents=True)
             (repo / ".brain" / "knowledge" / "daily").mkdir(parents=True)
             (repo / ".brain" / "knowledge" / "decisions").mkdir(parents=True)
@@ -22,6 +23,10 @@ class ProjectRuntimeEventTests(unittest.TestCase):
             (repo / ".claude").mkdir(parents=True)
             (repo / ".claude" / "settings.local.json").write_text(json.dumps({"enabledDepartments": ["engineering"]}))
             (repo / ".brain" / "state" / "approval-state.json").write_text(json.dumps({"state": "approved", "pending": []}))
+            (repo / ".brain" / "MEMORY.md").write_text("# Memory\n")
+            (repo / ".brain" / "memory" / "project_context.md").write_text("# Context\n")
+            (repo / ".brain" / "memory" / "feedback_rules.md").write_text("# Feedback\n")
+            (repo / ".brain" / "knowledge" / "projects" / f"{repo.name}.md").write_text("# Project\n")
             (repo / "CLAUDE.md").write_text("# Demo\n\n## Goal\nShip a demo.\n")
             (repo / "README.md").write_text("# Demo\n")
             with patch.dict("os.environ", {"COMPOUND_BRAIN_HOME": str(repo / ".global-brain")}):
@@ -31,6 +36,8 @@ class ProjectRuntimeEventTests(unittest.TestCase):
             self.assertTrue((repo / ".brain" / "knowledge" / "daily" / "intelligence_brief_latest.md").exists())
             self.assertTrue((repo / ".brain" / "state" / "action-queue.md").exists())
             self.assertTrue((repo / ".brain" / "state" / "skills.json").exists())
+            self.assertTrue((repo / ".brain" / "state" / "context-snapshot.json").exists())
+            self.assertTrue((repo / ".brain" / "state" / "runtime-packet.json").exists())
             store = RuntimeHeartbeatStore(repo / ".global-brain" / "registry" / "runtime-heartbeats", repo / ".global-brain" / "registry" / "runtime-locks")
             self.assertEqual(store.load(repo)["events"]["session-start"]["status"], "ok")
 
@@ -43,10 +50,20 @@ class ProjectRuntimeEventTests(unittest.TestCase):
             (repo / ".brain" / "knowledge" / "decisions").mkdir(parents=True)
             (repo / ".brain" / "knowledge" / "skills").mkdir(parents=True)
             (repo / ".brain" / "state").mkdir(parents=True)
+            (repo / ".brain" / "knowledge" / "projects").mkdir(parents=True)
             (repo / ".claude" / "departments").mkdir(parents=True)
             (repo / ".claude").mkdir(parents=True, exist_ok=True)
             (repo / ".claude" / "settings.local.json").write_text(json.dumps({"enabledDepartments": ["research"]}))
+            (repo / ".claude" / "departments" / "research.md").write_text("# Research\n")
             (repo / ".brain" / "state" / "approval-state.json").write_text(json.dumps({"state": "approved", "pending": []}))
+            (repo / ".brain" / "state" / "autonomy-depth.json").write_text(
+                json.dumps({"current_depth": 4, "allowed_max_depth": 5, "user_max_depth": 5, "recommended_next_depth": 5, "consecutive_healthy_cycles": 0}) + "\n"
+            )
+            (repo / ".brain" / "state" / "runtime-governor.json").write_text("{}\n")
+            (repo / ".brain" / "MEMORY.md").write_text("# Memory\n")
+            (repo / ".brain" / "memory" / "project_context.md").write_text("# Context\n")
+            (repo / ".brain" / "memory" / "feedback_rules.md").write_text("# Feedback\n")
+            (repo / ".brain" / "knowledge" / "projects" / f"{repo.name}.md").write_text("# Project\n")
             (repo / ".brain" / "autoresearch").mkdir(parents=True)
             (repo / ".brain" / "autoresearch" / "program.md").write_text(
                 "# Program\n"
@@ -65,6 +82,31 @@ class ProjectRuntimeEventTests(unittest.TestCase):
 
             self.assertEqual(result["status"], "ok")
             self.assertIn("autoresearch", result["cron_summary"])
+
+    def test_cron_depth_two_stays_in_planning_mode(self) -> None:
+        with TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            subprocess.run(["git", "init"], cwd=str(repo), check=False, capture_output=True, text=True)
+            (repo / ".brain" / "memory").mkdir(parents=True)
+            (repo / ".brain" / "knowledge" / "daily").mkdir(parents=True)
+            (repo / ".brain" / "knowledge" / "decisions").mkdir(parents=True)
+            (repo / ".brain" / "knowledge" / "skills").mkdir(parents=True)
+            (repo / ".brain" / "state").mkdir(parents=True)
+            (repo / ".claude").mkdir(parents=True, exist_ok=True)
+            (repo / ".claude" / "settings.local.json").write_text(json.dumps({"enabledDepartments": ["research"]}))
+            (repo / ".brain" / "state" / "approval-state.json").write_text(json.dumps({"state": "approved", "pending": []}))
+            (repo / ".brain" / "state" / "autonomy-depth.json").write_text(
+                json.dumps({"current_depth": 2, "allowed_max_depth": 5, "user_max_depth": 5, "recommended_next_depth": 3, "consecutive_healthy_cycles": 0}) + "\n"
+            )
+            (repo / ".brain" / "autoresearch").mkdir(parents=True)
+            (repo / ".brain" / "autoresearch" / "program.md").write_text("# Program\n")
+            (repo / "CLAUDE.md").write_text("# Demo\n\n## Goal\nShip a demo.\n")
+            (repo / "README.md").write_text("# Demo\n")
+            with patch.dict("os.environ", {"COMPOUND_BRAIN_HOME": str(repo / ".global-brain")}):
+                result = run_project_runtime_event(repo, "cron")
+
+            self.assertEqual(result["status"], "ok")
+            self.assertIn("planning-only", result["cron_summary"])
 
     def test_cron_failure_records_backoff_heartbeat(self) -> None:
         with TemporaryDirectory() as tmp:

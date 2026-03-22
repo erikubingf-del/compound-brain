@@ -37,3 +37,36 @@ def initialize_department_state(repo: Path, departments: list[str]) -> None:
                 "## Recent Failure Classes\n"
                 "- None yet.\n"
             )
+
+        sources_path = knowledge_dir / f"{department}-sources.md"
+        if not sources_path.exists():
+            sources_path.write_text(
+                f"# {department.title()} Department Sources\n\n"
+                "## Objective\n"
+                f"- Improve the project through the `{department}` department.\n\n"
+                "## Approved Sources\n"
+                "- Pending approved sources.\n\n"
+                "## Search Queries\n"
+                "- Pending search patterns.\n\n"
+                "## Validation Policy\n"
+                "- Validate external ideas against repo goals, allowed surfaces, and local checks.\n\n"
+                "## Anti-goals\n"
+                "- Do not adopt patterns that bypass project approvals or protected surfaces.\n"
+            )
+
+        shopping_path = state_dir / f"{department}-shopping.json"
+        if not shopping_path.exists():
+            shopping_path.write_text(
+                json.dumps(
+                    {
+                        "department": department,
+                        "missing_capabilities": [],
+                        "candidate_skills": [],
+                        "adopted_skills": [],
+                        "rejected_candidates": [],
+                        "next_review_at": None,
+                    },
+                    indent=2,
+                )
+                + "\n"
+            )

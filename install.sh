@@ -11,6 +11,7 @@ KNOWLEDGE_DIR="${BRAIN_DIR}/knowledge"
 SCRIPTS_DIR="${BRAIN_DIR}/scripts"
 LIB_DIR="${SCRIPTS_DIR}/lib"
 REGISTRY_DIR="${BRAIN_DIR}/registry"
+POLICY_DIR="${BRAIN_DIR}/policy"
 TEMPLATES_DIR="${BRAIN_DIR}/templates/project_claude"
 CODEX_TEMPLATES_DIR="${BRAIN_DIR}/templates/project_codex"
 SETTINGS_FILE="${BRAIN_DIR}/settings.json"
@@ -94,6 +95,7 @@ for dir in \
   "$KNOWLEDGE_DIR/qmp" \
   "$KNOWLEDGE_DIR/promotions" \
   "$REGISTRY_DIR" \
+  "$POLICY_DIR" \
   "$SCRIPTS_DIR" \
   "$LIB_DIR" \
   "$TEMPLATES_DIR/hooks" \
@@ -211,6 +213,16 @@ done
 if [[ ! -f "${KNOWLEDGE_DIR}/skills/skill-graph.md" ]]; then
   run "cp \"${REPO_DIR}/knowledge-seed/skills/skill-graph.md\" \"${KNOWLEDGE_DIR}/skills/skill-graph.md\""
   ok "Seeded: skill-graph.md"
+fi
+
+# Autonomy policy seed
+if [[ ! -f "${POLICY_DIR}/autonomy-depth.json" ]]; then
+  run "cp \"${REPO_DIR}/policy-seed/autonomy-depth.json\" \"${POLICY_DIR}/autonomy-depth.json\""
+  ok "Seeded policy: autonomy-depth.json"
+fi
+if [[ ! -f "${POLICY_DIR}/required-context.json" ]]; then
+  run "cp \"${REPO_DIR}/policy-seed/required-context.json\" \"${POLICY_DIR}/required-context.json\""
+  ok "Seeded policy: required-context.json"
 fi
 
 # Decision log seed

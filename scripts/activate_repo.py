@@ -11,6 +11,11 @@ import sys
 from pathlib import Path
 
 try:
+    from scripts.lib.autonomy_depth import (
+        ensure_global_policy,
+        initialize_repo_depth_state,
+        initialize_runtime_state,
+    )
     from scripts.lib.approval_state import ApprovalStateStore
     from scripts.lib.activation_registry import ActivationRegistry
     from scripts.lib.audit_packet import build_audit_packet
@@ -19,6 +24,11 @@ try:
     from scripts.materialize_project_claude import materialize_project_claude
     from scripts.prepare_brain import prepare_brain
 except ModuleNotFoundError:
+    from lib.autonomy_depth import (
+        ensure_global_policy,
+        initialize_repo_depth_state,
+        initialize_runtime_state,
+    )
     from lib.approval_state import ApprovalStateStore
     from lib.activation_registry import ActivationRegistry
     from lib.audit_packet import build_audit_packet
@@ -226,6 +236,7 @@ def main() -> int:
         summary["next_state"] = "preview-ready"
     else:
         repo_root = Path(summary["repo_path"])
+        policy = ensure_global_policy(claude_home_dir())
         if (
             not summary["has_brain"]
             or not (repo_root / "CLAUDE.md").exists()
@@ -238,6 +249,8 @@ def main() -> int:
             project_goal_candidates=list(packet["project_goal_candidates"]),
             departments=list(packet["departments"]),
         )
+        depth_state = initialize_repo_depth_state(repo_root, policy)
+        initialize_runtime_state(repo_root, depth_state)
 
         registry = ActivationRegistry(activation_registry_path())
         summary["registry_record"] = registry.register_repo(
@@ -249,6 +262,7 @@ def main() -> int:
         summary["has_brain"] = True
         summary["has_local_claude"] = True
         summary["approval_state"] = approval_state["state"]
+        summary["current_depth"] = depth_state["current_depth"]
         summary["skill_state"] = refresh_repo_skill_state(repo_root, claude_home=claude_home_dir())
         summary["next_state"] = "awaiting-strategic-confirmation"
 
@@ -279,6 +293,7 @@ def main() -> int:
                 f"{len(skill_state.get('missing', []))} missing, "
                 f"{len(skill_state.get('materialized', []))} materialized"
             )
+        print(f"depth: {summary.get('current_depth', 'unknown')}")
         print("strategic confirmations: project goal, department goals, major architecture changes")
         print("next state: awaiting strategic confirmation")
     return 0

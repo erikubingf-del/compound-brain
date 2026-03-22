@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "user_max_depth": 5,
+  "default_repo_start_depth": 2,
+  "auto_raise_enabled": true,
+  "auto_lower_enabled": true,
+  "require_confirmation_for_first_depth_5": true,
+  "raise_thresholds": {
+    "3": 60,
+    "4": 75,
+    "5": 90
+  },
+  "stay_floors": {
+    "2": 25,
+    "3": 50,
+    "4": 68,
+    "5": 85
+  }
+}

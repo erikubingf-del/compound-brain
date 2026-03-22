@@ -18,6 +18,7 @@ Lives in `~/.claude/`.
 Responsibilities:
 - shared hooks and cron dispatch
 - global PARA/QMP/skills/decisions
+- global autonomy-depth and required-context policy
 - repo preview cache
 - activation registry
 - promotion inbox
@@ -40,6 +41,10 @@ Activated repo adds:
 - `.claude/hooks/`
 - `.claude/departments/`
 - approval state
+- autonomy-depth state
+- runtime governor state
+- runtime packet
+- context snapshot
 - department state
 - skill state
 - autoresearch state
@@ -69,11 +74,25 @@ Cycle shape:
 - log result
 - stop or escalate
 
+Runtime governance:
+- every event writes `.brain/state/context-snapshot.json`
+- every event writes `.brain/state/runtime-packet.json`
+- every event refreshes `.brain/state/runtime-governor.json`
+- repo depth lives in `.brain/state/autonomy-depth.json`
+- department source packs live in `.brain/knowledge/departments/<department>-sources.md`
+- department skill-shopping state lives in `.brain/state/departments/<department>-shopping.json`
+
 Hook and cron wiring:
 - `project_session_start.py` dispatches to the shared runtime event engine
 - `project_stop.py` dispatches to the shared runtime event engine
 - `project_llm_cron.py` dispatches to the shared runtime event engine
 - the shared engine refreshes audits, intelligence briefs, ranked actions, and bounded runtime cycles
+
+Depth behavior:
+- depth `2` keeps cron in planning-only mode
+- depth `3` allows bounded department execution
+- depth `4+` allows evaluator-backed autoresearch
+- depth lowers automatically when approvals, trust, or context compliance fail
 
 Operational trust layer:
 - heartbeat records live in `~/.claude/registry/runtime-heartbeats/`

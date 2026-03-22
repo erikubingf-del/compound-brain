@@ -28,6 +28,7 @@ Repos then move through a strict lifecycle:
 The global install is the cross-project orchestrator. It is responsible for:
 
 - overall memory architecture in `~/.claude/`
+- global autonomy-depth policy in `~/.claude/policy/`
 - shared logs, skills, QMP, decisions, and retrieval behavior
 - repo preview cache for non-activated projects
 - promotion inbox and scheduled review for cross-project learnings
@@ -111,6 +112,10 @@ python3 ~/.claude/scripts/activate_repo.py --project-dir /path/to/repo
 - `.claude/hooks/*.py`
 - `.claude/departments/*.md`
 - `.brain/state/approval-state.json`
+- `.brain/state/autonomy-depth.json`
+- `.brain/state/runtime-governor.json`
+- `.brain/state/runtime-packet.json`
+- `.brain/state/context-snapshot.json`
 - `.brain/state/departments/*.json`
 - `.brain/state/skills.json`
 - `.brain/autoresearch/program.md`
@@ -128,6 +133,8 @@ Each department has:
 - a contract in `.claude/departments/`
 - state in `.brain/state/departments/`
 - memory in `.brain/knowledge/departments/`
+- an approved source pack in `.brain/knowledge/departments/<department>-sources.md`
+- a skill-shopping state file in `.brain/state/departments/<department>-shopping.json`
 
 The runtime always gates before acting:
 - approvals first
@@ -139,6 +146,45 @@ Activated repos also get real event loops:
 - `SessionStart` refreshes audit, intelligence brief, and ranked actions
 - `Stop` refreshes project state and updates self-hosting scorecards when relevant
 - repo cron refreshes audit and briefs, then runs department and autoresearch cycles
+
+## Autonomy Depth Governor
+
+Activated repos now run with an explicit depth governor instead of one fixed
+autonomy level.
+
+Global policy lives in:
+
+- `~/.claude/policy/autonomy-depth.json`
+- `~/.claude/policy/required-context.json`
+
+Per-repo runtime state lives in:
+
+- `.brain/state/autonomy-depth.json`
+- `.brain/state/runtime-governor.json`
+- `.brain/state/runtime-packet.json`
+- `.brain/state/context-snapshot.json`
+- `.brain/state/department-health.json`
+
+Depth ladder:
+
+- `0` preview-only
+- `1` memory-only
+- `2` bounded planning
+- `3` bounded execution
+- `4` evaluator-backed experiments
+- `5` high autonomy
+
+The runtime now:
+
+1. loads user policy and repo depth
+2. pre-hydrates deterministic repo state like skills and ranked actions
+3. builds a fail-closed context snapshot from required files
+4. computes a trust score from approvals, heartbeat health, skill coverage, department health, and validation signals
+5. writes a compact runtime packet for Claude and Codex
+6. lowers or recommends depth changes when evidence requires it
+
+This keeps repo autonomy adaptive per user and per repo without letting the
+runtime exceed the user’s declared ceiling.
 
 ## Repo skill matching
 
@@ -209,6 +255,7 @@ Implemented in the current MVP branch:
 - shared project runtime event engine for session start, stop, and cron autoimprovement
 - heartbeat ledger, lockfiles, retry backoff, and watchdog reporting for activated repos
 - repo-aware skill matching across local, global, and approved external skill sources
+- autonomy-depth policy, fail-closed context snapshots, runtime packets, and trust-governed depth state
 - evaluator-backed autoresearch execution with keep/discard results
 - local skill promotion, global promotion inbox, scheduled review, and approved
   promotion application into canonical global knowledge

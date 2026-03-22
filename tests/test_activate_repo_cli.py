@@ -53,6 +53,8 @@ class ActivateRepoCliTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, msg=result.stderr)
             self.assertIn("repo: demo", result.stdout)
             self.assertTrue((repo / ".brain" / "state" / "approval-state.json").exists())
+            self.assertTrue((repo / ".brain" / "state" / "autonomy-depth.json").exists())
+            self.assertTrue((repo / ".brain" / "state" / "runtime-governor.json").exists())
             self.assertTrue((repo / ".claude").exists())
             state = json.loads((repo / ".brain" / "state" / "approval-state.json").read_text())
             self.assertEqual(state["state"], "awaiting-project-goal")

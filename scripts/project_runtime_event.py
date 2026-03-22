@@ -12,7 +12,21 @@ from pathlib import Path
 from typing import Any
 
 try:
+    from scripts.lib.autonomy_depth import (
+        apply_governor_to_depth_state,
+        load_global_policy,
+        load_repo_depth_state,
+        required_context_files,
+    )
     from scripts.lib.runtime_heartbeat import RuntimeHeartbeatStore
+    from scripts.lib.runtime_governor import (
+        allowed_actions_for_event,
+        build_context_snapshot,
+        build_runtime_governor,
+        build_runtime_packet,
+        choose_lead_department,
+        choose_supporting_departments,
+    )
     from scripts.lib.skill_inventory import refresh_repo_skill_state
     from scripts.project_auditor import audit_project
     from scripts.project_intelligence import run_for_project
@@ -20,7 +34,21 @@ try:
     from scripts.run_project_llm_cron import run_project_cron
     from scripts.update_architecture_scorecard import main as update_architecture_scorecard_main
 except ModuleNotFoundError:
+    from lib.autonomy_depth import (
+        apply_governor_to_depth_state,
+        load_global_policy,
+        load_repo_depth_state,
+        required_context_files,
+    )
     from lib.runtime_heartbeat import RuntimeHeartbeatStore
+    from lib.runtime_governor import (
+        allowed_actions_for_event,
+        build_context_snapshot,
+        build_runtime_governor,
+        build_runtime_packet,
+        choose_lead_department,
+        choose_supporting_departments,
+    )
     from lib.skill_inventory import refresh_repo_skill_state
     from project_auditor import audit_project
     from project_intelligence import run_for_project
@@ -121,13 +149,118 @@ def run_project_runtime_event(project_dir: Path, event: str) -> dict[str, Any]:
         while attempt < attempts:
             attempt += 1
             try:
+                policy = load_global_policy(claude_home_dir())
+                depth_state = load_repo_depth_state(project_dir, policy)
+                approval_state_path = project_dir / ".brain" / "state" / "approval-state.json"
+                approval_state = (
+                    json.loads(approval_state_path.read_text())
+                    if approval_state_path.exists()
+                    else {"state": "inactive", "pending": []}
+                )
+                settings_path = project_dir / ".claude" / "settings.local.json"
+                enabled_departments = []
+                if settings_path.exists():
+                    settings = json.loads(settings_path.read_text())
+                    enabled_departments = list(settings.get("enabledDepartments", []))
+                if not enabled_departments:
+                    enabled_departments = [path.stem for path in (project_dir / ".claude" / "departments").glob("*.md")]
+
                 audit_refreshed = False
                 if event in {"session-start", "cron"} and audit_is_due(project_dir):
                     audit_refreshed = audit_project(project_dir, force=True)
 
-                brief = run_for_project(project_dir, dry_run=False)
                 skills = refresh_repo_skill_state(project_dir, claude_home=claude_home_dir())
                 ranking = refresh_ranked_actions(project_dir)
+                project_state = ProjectState.from_brain(project_dir)
+                lead_department = choose_lead_department(enabled_departments, ranking["top_action_category"], event)
+                supporting_departments = choose_supporting_departments(enabled_departments, lead_department)
+                required_files = required_context_files(
+                    project_dir,
+                    event=event,
+                    depth=int(depth_state["current_depth"]),
+                    lead_department=lead_department,
+                    claude_home=claude_home_dir(),
+                )
+                context_snapshot = build_context_snapshot(
+                    project_dir,
+                    event=event,
+                    current_depth=int(depth_state["current_depth"]),
+                    required_files=required_files,
+                )
+                governor = build_runtime_governor(
+                    repo=project_dir,
+                    event=event,
+                    current_depth=int(depth_state["current_depth"]),
+                    approval_state=approval_state,
+                    context_snapshot=context_snapshot,
+                    skill_state=skills,
+                    heartbeat_record=store.load(project_dir),
+                    policy=policy,
+                    validation_success=project_state.test_pass_rate,
+                )
+                depth_state = apply_governor_to_depth_state(
+                    project_dir,
+                    policy,
+                    depth_state,
+                    governor,
+                    approval_state,
+                )
+                if int(depth_state["current_depth"]) != context_snapshot["current_depth"]:
+                    required_files = required_context_files(
+                        project_dir,
+                        event=event,
+                        depth=int(depth_state["current_depth"]),
+                        lead_department=lead_department,
+                        claude_home=claude_home_dir(),
+                    )
+                    context_snapshot = build_context_snapshot(
+                        project_dir,
+                        event=event,
+                        current_depth=int(depth_state["current_depth"]),
+                        required_files=required_files,
+                    )
+                    governor = build_runtime_governor(
+                        repo=project_dir,
+                        event=event,
+                        current_depth=int(depth_state["current_depth"]),
+                        approval_state=approval_state,
+                        context_snapshot=context_snapshot,
+                        skill_state=skills,
+                        heartbeat_record=store.load(project_dir),
+                        policy=policy,
+                        validation_success=project_state.test_pass_rate,
+                    )
+
+                allowed_actions, blocked_actions = allowed_actions_for_event(event, int(depth_state["current_depth"]))
+                build_runtime_packet(
+                    repo=project_dir,
+                    event=event,
+                    current_depth=int(depth_state["current_depth"]),
+                    lead_department=lead_department,
+                    supporting_departments=supporting_departments,
+                    goal=ranking["goal"],
+                    top_action=ranking["top_action"],
+                    approval_state=approval_state,
+                    skill_state=skills,
+                    context_snapshot=context_snapshot,
+                    allowed_actions=allowed_actions,
+                    blocked_actions=blocked_actions,
+                    do_not_repeat=[f"Do not repeat {item}" for item in approval_state.get("pending", [])][:2],
+                )
+
+                if not context_snapshot["context_ok"]:
+                    duration = time.monotonic() - start
+                    summary = "blocked-context"
+                    store.mark_success(project_dir, event, duration_seconds=duration, summary=summary)
+                    return {
+                        "status": "blocked",
+                        "reason": "missing-context",
+                        "event": event,
+                        "current_depth": depth_state["current_depth"],
+                        "missing_context_files": context_snapshot["missing_context_files"],
+                    }
+
+                brief = run_for_project(project_dir, dry_run=False)
                 runtime: dict[str, Any] = {
                     "status": "ok",
                     "event": event,
@@ -136,13 +269,23 @@ def run_project_runtime_event(project_dir: Path, event: str) -> dict[str, Any]:
                     "brief_written": bool(brief is not None),
                     "top_action": ranking["top_action"],
                     "goal": ranking["goal"],
+                    "current_depth": depth_state["current_depth"],
+                    "lead_department": lead_department,
                     "skill_active_count": len(skills["active"]),
                     "skill_missing_count": len(skills["missing"]),
                     "skill_materialized_count": len(skills["materialized"]),
+                    "trust_score": governor["trust_score"],
                 }
 
                 if event == "cron":
-                    summary, rc = run_project_cron(project_dir, dry_run=False, refresh_skills=False)
+                    summary, rc = run_project_cron(
+                        project_dir,
+                        dry_run=False,
+                        refresh_skills=False,
+                        current_depth=int(depth_state["current_depth"]),
+                        lead_department=lead_department,
+                        supporting_departments=supporting_departments,
+                    )
                     runtime["cron_summary"] = summary
                     runtime["cron_rc"] = rc
                     if rc != 0:
