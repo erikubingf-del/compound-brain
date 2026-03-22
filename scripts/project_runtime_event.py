@@ -13,6 +13,7 @@ from typing import Any
 
 try:
     from scripts.lib.runtime_heartbeat import RuntimeHeartbeatStore
+    from scripts.lib.skill_inventory import refresh_repo_skill_state
     from scripts.project_auditor import audit_project
     from scripts.project_intelligence import run_for_project
     from scripts.probability_engine import ProjectState, rank_actions
@@ -20,6 +21,7 @@ try:
     from scripts.update_architecture_scorecard import main as update_architecture_scorecard_main
 except ModuleNotFoundError:
     from lib.runtime_heartbeat import RuntimeHeartbeatStore
+    from lib.skill_inventory import refresh_repo_skill_state
     from project_auditor import audit_project
     from project_intelligence import run_for_project
     from probability_engine import ProjectState, rank_actions
@@ -124,6 +126,7 @@ def run_project_runtime_event(project_dir: Path, event: str) -> dict[str, Any]:
                     audit_refreshed = audit_project(project_dir, force=True)
 
                 brief = run_for_project(project_dir, dry_run=False)
+                skills = refresh_repo_skill_state(project_dir, claude_home=claude_home_dir())
                 ranking = refresh_ranked_actions(project_dir)
                 runtime: dict[str, Any] = {
                     "status": "ok",
@@ -133,10 +136,13 @@ def run_project_runtime_event(project_dir: Path, event: str) -> dict[str, Any]:
                     "brief_written": bool(brief is not None),
                     "top_action": ranking["top_action"],
                     "goal": ranking["goal"],
+                    "skill_active_count": len(skills["active"]),
+                    "skill_missing_count": len(skills["missing"]),
+                    "skill_materialized_count": len(skills["materialized"]),
                 }
 
                 if event == "cron":
-                    summary, rc = run_project_cron(project_dir, dry_run=False)
+                    summary, rc = run_project_cron(project_dir, dry_run=False, refresh_skills=False)
                     runtime["cron_summary"] = summary
                     runtime["cron_rc"] = rc
                     if rc != 0:

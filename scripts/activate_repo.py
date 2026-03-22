@@ -15,6 +15,7 @@ try:
     from scripts.lib.activation_registry import ActivationRegistry
     from scripts.lib.audit_packet import build_audit_packet
     from scripts.lib.repo_preview_cache import RepoPreviewCache
+    from scripts.lib.skill_inventory import refresh_repo_skill_state
     from scripts.materialize_project_claude import materialize_project_claude
     from scripts.prepare_brain import prepare_brain
 except ModuleNotFoundError:
@@ -22,6 +23,7 @@ except ModuleNotFoundError:
     from lib.activation_registry import ActivationRegistry
     from lib.audit_packet import build_audit_packet
     from lib.repo_preview_cache import RepoPreviewCache
+    from lib.skill_inventory import refresh_repo_skill_state
     from materialize_project_claude import materialize_project_claude
     from prepare_brain import prepare_brain
 
@@ -247,6 +249,7 @@ def main() -> int:
         summary["has_brain"] = True
         summary["has_local_claude"] = True
         summary["approval_state"] = approval_state["state"]
+        summary["skill_state"] = refresh_repo_skill_state(repo_root, claude_home=claude_home_dir())
         summary["next_state"] = "awaiting-strategic-confirmation"
 
     if args.json:
@@ -268,6 +271,14 @@ def main() -> int:
         print("next state: preview ready")
     else:
         print(f"departments: {', '.join(summary['departments'])}")
+        skill_state = summary.get("skill_state", {})
+        if isinstance(skill_state, dict):
+            print(
+                "skill state: "
+                f"{len(skill_state.get('active', []))} active, "
+                f"{len(skill_state.get('missing', []))} missing, "
+                f"{len(skill_state.get('materialized', []))} materialized"
+            )
         print("strategic confirmations: project goal, department goals, major architecture changes")
         print("next state: awaiting strategic confirmation")
     return 0

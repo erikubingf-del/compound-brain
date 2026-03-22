@@ -112,6 +112,7 @@ python3 ~/.claude/scripts/activate_repo.py --project-dir /path/to/repo
 - `.claude/departments/*.md`
 - `.brain/state/approval-state.json`
 - `.brain/state/departments/*.json`
+- `.brain/state/skills.json`
 - `.brain/autoresearch/program.md`
 
 ## Department runtime
@@ -138,6 +139,27 @@ Activated repos also get real event loops:
 - `SessionStart` refreshes audit, intelligence brief, and ranked actions
 - `Stop` refreshes project state and updates self-hosting scorecards when relevant
 - repo cron refreshes audit and briefs, then runs department and autoresearch cycles
+
+## Repo skill matching
+
+Activated repos now keep a live repo skill inventory in:
+
+- `.brain/state/skills.json`
+- `.brain/knowledge/skills/skill-graph.md`
+- `.brain/knowledge/skills/patterns/*.md`
+
+The runtime does this automatically on activation, session start, and cron:
+
+1. audit repo signals, stack, and enabled departments
+2. infer the missing capability surfaces the repo likely needs
+3. search repo-local skills first
+4. search global shared skills in `~/.claude/knowledge/skills/`
+5. search approved external skill roots such as installed Codex skills
+6. materialize the best-fit repo skills into the repo brain when confidence is high
+7. track active, stale, recommended, and missing skills for that repo
+
+This keeps each activated repo specialized without creating a parallel skill
+system outside the repo brain.
 
 ## Heartbeats
 
@@ -186,6 +208,7 @@ Implemented in the current MVP branch:
 - bounded department-cycle runtime
 - shared project runtime event engine for session start, stop, and cron autoimprovement
 - heartbeat ledger, lockfiles, retry backoff, and watchdog reporting for activated repos
+- repo-aware skill matching across local, global, and approved external skill sources
 - evaluator-backed autoresearch execution with keep/discard results
 - local skill promotion, global promotion inbox, scheduled review, and approved
   promotion application into canonical global knowledge

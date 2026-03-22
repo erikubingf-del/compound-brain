@@ -41,6 +41,7 @@ Activated repo adds:
 - `.claude/departments/`
 - approval state
 - department state
+- skill state
 - autoresearch state
 
 ## Shared control plane
@@ -110,6 +111,15 @@ Files:
 Project-local skill promotion:
 - `.brain/knowledge/skills/skill-graph.md`
 - `.brain/knowledge/skills/patterns/*.md`
+- `.brain/state/skills.json`
+
+Repo skill discovery flow:
+- infer required capabilities from repo stack, docs, tests, departments, and autoresearch state
+- match repo-local skills first
+- match global shared skills second
+- match approved external skill roots last
+- materialize best-fit skills into the repo brain when the match is strong enough
+- keep explicit active, stale, recommended, and missing skill state per repo
 
 Cross-project candidates:
 - `~/.claude/knowledge/promotions/inbox.md`

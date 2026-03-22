@@ -12,11 +12,13 @@ try:
     from scripts.lib.autoresearch_runner import run_autoresearch_cycle
     from scripts.lib.department_cycle import run_department_cycle
     from scripts.lib.promotion_inbox import PromotionInbox
+    from scripts.lib.skill_inventory import refresh_repo_skill_state
     from scripts.lib.skill_evolution import promote_skill_pattern
 except ModuleNotFoundError:
     from lib.autoresearch_runner import run_autoresearch_cycle
     from lib.department_cycle import run_department_cycle
     from lib.promotion_inbox import PromotionInbox
+    from lib.skill_inventory import refresh_repo_skill_state
     from lib.skill_evolution import promote_skill_pattern
 
 
@@ -52,13 +54,21 @@ def enabled_departments(project_dir: Path) -> list[str]:
     return []
 
 
-def run_project_cron(project_dir: Path, dry_run: bool = False) -> tuple[str, int]:
+def run_project_cron(
+    project_dir: Path,
+    dry_run: bool = False,
+    refresh_skills: bool = True,
+) -> tuple[str, int]:
     departments = enabled_departments(project_dir)
     if not departments:
         return ("missing enabled departments", 0)
 
     if dry_run:
         return (f"[dry-run] {', '.join(departments)}", 0)
+
+    skill_state: dict[str, object] | None = None
+    if refresh_skills:
+        skill_state = refresh_repo_skill_state(project_dir, claude_home=claude_home_dir())
 
     results = [run_department_cycle(project_dir, department) for department in departments]
     autoresearch_program = project_dir / ".brain" / "autoresearch" / "program.md"
@@ -97,9 +107,17 @@ def run_project_cron(project_dir: Path, dry_run: bool = False) -> tuple[str, int
                 target_kind=str(candidate["target_kind"]),
                 details=details or None,
             )
-    summary = ", ".join(
+    parts: list[str] = []
+    if skill_state is not None:
+        parts.append(
+            "skills="
+            + f"active:{len(skill_state['active'])}"
+            + f"/missing:{len(skill_state['missing'])}"
+        )
+    parts.extend(
         f"{result['department']}={result['status']}" for result in results
     )
+    summary = ", ".join(parts)
     return (summary or "ok", 0)
 
 

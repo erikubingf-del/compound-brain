@@ -35,3 +35,4 @@ class ProjectCronTests(unittest.TestCase):
             self.assertEqual(rc, 0)
             self.assertIn("autoresearch=baseline-recorded", output)
             self.assertTrue((repo / ".brain" / "autoresearch" / "results.jsonl").exists())
+            self.assertTrue((repo / ".brain" / "state" / "skills.json").exists())
