@@ -48,12 +48,26 @@ class ApprovalStateStore:
             lines.extend(["", "## Department Goals"])
             for department, goal in department_goals.items():
                 lines.append(f"- `{department}`: {goal}")
+        recommendation = payload.get("recommendation")
+        if isinstance(recommendation, dict) and recommendation:
+            lines.extend(["", "## Recommendation"])
+            if recommendation.get("message"):
+                lines.append(f"- {recommendation['message']}")
+            if recommendation.get("recommended_project_goal"):
+                lines.append(f"- `project_goal`: {recommendation['recommended_project_goal']}")
+            recommended_departments = recommendation.get("recommended_departments", [])
+            if recommended_departments:
+                lines.append(
+                    "- `departments`: " + ", ".join(f"`{item}`" for item in recommended_departments)
+                )
+            lines.append("- Want me to do that?")
         self.pending_path.write_text("\n".join(lines) + "\n")
 
     def initialize(
         self,
         project_goal_candidates: list[str],
         departments: list[str],
+        recommendation: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         payload = {
             "state": "awaiting-project-goal",
@@ -65,6 +79,8 @@ class ApprovalStateStore:
             },
             "updated_at": now_utc(),
         }
+        if recommendation:
+            payload["recommendation"] = recommendation
         self.save(payload)
         self.write_pending_markdown(payload)
         return payload

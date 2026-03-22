@@ -121,6 +121,10 @@ These gate:
 - architecture changes
 - autoresearch enablement
 
+Before confirmation, activation may also store a recommendation packet in the
+approval state so the user sees a stronger proposed `project_goal` or
+repo-native department alignment before approving strategy.
+
 ## Autoresearch model
 
 Autoresearch only runs with:

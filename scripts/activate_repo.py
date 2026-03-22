@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -214,6 +215,92 @@ def build_preview_record(summary: dict[str, object], packet: dict[str, object]) 
     )
 
 
+def collect_repo_text_signals(repo_root: Path) -> str:
+    text_parts: list[str] = []
+    candidates = [
+        repo_root / "README.md",
+        repo_root / "ARCHITECTURE.md",
+        repo_root / "CLAUDE.md",
+    ]
+    docs_dir = repo_root / "docs"
+    if docs_dir.exists():
+        candidates.extend(sorted(docs_dir.glob("*.md"))[:5])
+    for path in candidates:
+        if not path.exists():
+            continue
+        try:
+            text_parts.append(path.read_text(encoding="utf-8", errors="replace")[:4000])
+        except OSError:
+            continue
+    return "\n".join(text_parts)
+
+
+def infer_recommended_project_goal(repo_name: str, repo_text: str, fallback: str) -> str:
+    lowered = repo_text.lower()
+    trading_terms = [
+        "trading system",
+        "backtest",
+        "portfolio",
+        "execution",
+        "market structure",
+        "risk",
+        "alpha",
+        "strategy",
+    ]
+    if any(term in lowered for term in trading_terms):
+        return (
+            f"Operate {repo_name} as a trading system that improves strategy quality, "
+            "execution safety, and risk-aware iteration through evaluator-backed decisions."
+        )
+    return fallback
+
+
+def detect_department_structure(repo_text: str) -> list[str]:
+    matches = re.findall(r"\bD\d{2}\b", repo_text)
+    ordered: list[str] = []
+    for item in matches:
+        if item not in ordered:
+            ordered.append(item)
+    return ordered
+
+
+def department_range_label(departments: list[str]) -> str:
+    if not departments:
+        return ""
+    if len(departments) == 1:
+        return departments[0]
+    return f"{departments[0]}–{departments[-1]}"
+
+
+def build_activation_recommendation(summary: dict[str, object], packet: dict[str, object]) -> dict[str, object]:
+    repo_root = Path(str(summary["repo_path"]))
+    repo_text = collect_repo_text_signals(repo_root)
+    recommended_goal = infer_recommended_project_goal(
+        str(summary["repo_name"]),
+        repo_text,
+        str(packet["project_goal_candidates"][0]),
+    )
+    detected_departments = detect_department_structure(repo_text)
+    recommended_departments = detected_departments or list(packet["departments"])
+
+    message = (
+        "Before confirming goals, I'd write a proper project_goal into the approval state "
+        "that reflects the repo reality"
+    )
+    if detected_departments:
+        message += (
+            f", and align the department names to the actual {department_range_label(detected_departments)} "
+            "structure"
+        )
+    message += "."
+
+    return {
+        "message": message,
+        "recommended_project_goal": recommended_goal,
+        "recommended_departments": recommended_departments,
+    }
+
+
 def main() -> int:
     args = build_parser().parse_args()
     try:
@@ -231,6 +318,7 @@ def main() -> int:
     summary["preview_record"] = build_preview_record(summary, packet)
     summary["departments"] = packet["departments"]
     summary["project_goal_candidates"] = packet["project_goal_candidates"]
+    summary["recommendation"] = build_activation_recommendation(summary, packet)
 
     if args.check_only:
         summary["next_state"] = "preview-ready"
@@ -248,6 +336,7 @@ def main() -> int:
         approval_state = approval_store.initialize(
             project_goal_candidates=list(packet["project_goal_candidates"]),
             departments=list(packet["departments"]),
+            recommendation=dict(summary["recommendation"]),
         )
         depth_state = initialize_repo_depth_state(repo_root, policy)
         initialize_runtime_state(repo_root, depth_state)
@@ -295,6 +384,17 @@ def main() -> int:
             )
         print(f"depth: {summary.get('current_depth', 'unknown')}")
         print("strategic confirmations: project goal, department goals, major architecture changes")
+        recommendation = summary.get("recommendation", {})
+        if isinstance(recommendation, dict) and recommendation:
+            print(f"Recommendation: {recommendation['message']}")
+            print(
+                "  proposed project_goal: "
+                f"{recommendation.get('recommended_project_goal', summary['project_goal_candidates'][0])}"
+            )
+            recommended_departments = recommendation.get("recommended_departments", [])
+            if recommended_departments:
+                print("  proposed departments: " + ", ".join(recommended_departments))
+            print("  Want me to do that?")
         print("next state: awaiting strategic confirmation")
     return 0
 

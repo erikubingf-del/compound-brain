@@ -147,6 +147,13 @@ python3 ~/.claude/scripts/activate_repo.py --project-dir /path/to/repo
 - `.brain/state/skills.json`
 - `.brain/autoresearch/program.md`
 
+Before goals are confirmed, activation now also writes a recommendation into the
+approval state and prints it in the activation output. That recommendation can:
+
+- propose a cleaner `project_goal` based on repo reality
+- propose aligning department names to an existing repo-native structure
+- ask for confirmation before those strategic changes are applied
+
 ## Department runtime
 
 Activated repos get a bounded department-cycle runtime:
