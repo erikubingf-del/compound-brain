@@ -361,6 +361,8 @@ def build_runtime_packet(
     blocked_actions: list[str],
     do_not_repeat: list[str],
     agreement: dict[str, Any] | None = None,
+    execution_mode: str = "one-shot",
+    ralph: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     payload = {
         "version": 1,
@@ -381,6 +383,8 @@ def build_runtime_packet(
         "do_not_repeat": do_not_repeat,
         "allowed_actions": allowed_actions,
         "blocked_actions": blocked_actions,
+        "execution_mode": execution_mode,
+        "ralph": ralph or {"mode": execution_mode, "eligible": False, "reasons": []},
         "department_agreement": {
             "result": (agreement or {}).get("result", "agree"),
             "positions": (agreement or {}).get("positions", {}),

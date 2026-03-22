@@ -78,6 +78,10 @@ Out of scope for v1:
   history, healthy streaks, and agreement-aware depth movement so operations or
   architecture objections can push higher-depth cron work back into planning
   instead of letting execution continue blindly
+- The self-hosting runtime now adds a gated Ralph lane for `compound-brain`:
+  eligible cron work can generate a one-story PRD, run one Ralph iteration,
+  and record `.brain/state/ralph-state.json` instead of always using the
+  default bounded cron executor
 - The repo now also exposes bounded community contribution lanes under
   `community/` plus GitHub issue and PR templates so users can contribute
   skills, department packs, source packs, evaluators, case studies,
@@ -99,6 +103,7 @@ Out of scope for v1:
 - Repo-aware skill discovery and materialization for activated repos
 - Policy-driven autonomy depth with trust-governed execution lanes
 - Cross-department agreement as a first-class runtime gate
+- Ralph as an automatic outer loop for eligible self-hosting cron work
 - Community contribution lanes with promotion-oriented review instead of direct
   runtime mutation
 
@@ -134,6 +139,8 @@ Out of scope for v1:
   decision payloads
 - Tighten self-hosting evaluator coverage beyond the current deterministic
   gates, rubric checks, and smoke canary
+- Decide whether self-hosting Ralph lanes should stay Codex-first or become
+  policy-selectable by default agent
 - Improve the skill-matching heuristics beyond the current conservative
   title-and-capability filters so repo recommendations stay high-signal as the
   approved external skill inventory grows

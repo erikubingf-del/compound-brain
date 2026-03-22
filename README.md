@@ -277,8 +277,26 @@ through its own hooks and cron loops. Those loops are constrained by:
 
 - `.brain/architecture/evaluator.md`
 - `.brain/architecture/scorecard.json`
+- `~/.claude/policy/ralph-policy.json`
 
 The evaluator is fixed unless explicitly approved to change.
+
+For self-hosting implementation lanes, `compound-brain` can now auto-route
+eligible cron work into a one-story Ralph loop instead of the default bounded
+cron executor. That routing is narrow on purpose:
+
+- only `compound-brain` uses it automatically
+- only `cron` can trigger it
+- current depth must be `4+`
+- trust score and healthy streak must clear the Ralph policy threshold
+- no strategic approvals can be pending
+- architecture or operations objections block it
+- only eligible action categories like `feature`, `debt`, and `research` can route
+
+When those gates pass, the runtime creates or refreshes
+`.agents/tasks/prd-compound-brain-auto.json`, runs one Ralph iteration, and
+writes `.brain/state/ralph-state.json` so the repo has a durable record of what
+Ralph did.
 
 ## Current status
 
@@ -296,6 +314,7 @@ Implemented in the current MVP branch:
 - local skill promotion, global promotion inbox, scheduled review, and approved
   promotion application into canonical global knowledge
 - self-hosting evaluator surfaces plus scorecard automation
+- self-hosting Ralph auto-routing for eligible `compound-brain` cron lanes
 - managed Codex bootstrap and shared nightly review wrapper
 
 Still evolving:

@@ -173,5 +173,20 @@ It self-improves against:
 - `.brain/architecture/scorecard.json`
 - `scripts/update_architecture_scorecard.py`
 - `scripts/nightly_review.sh`
+- `~/.claude/policy/ralph-policy.json`
+
+For self-hosting implementation lanes, `compound-brain` may also auto-route
+eligible cron work into Ralph:
+- repo must be `compound-brain`
+- event must be `cron`
+- depth must meet the Ralph minimum
+- trust and healthy streak must meet policy thresholds
+- no pending strategic approvals
+- no architecture or operations veto
+- top action category must be eligible
+
+If those gates pass, the runtime materializes a single-story PRD in
+`.agents/tasks/prd-compound-brain-auto.json`, runs one Ralph iteration, and
+records the outcome in `.brain/state/ralph-state.json`.
 
 The evaluator is approval-gated and cannot be silently rewritten by the runtime.

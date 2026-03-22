@@ -20,6 +20,7 @@ try:
     )
     from scripts.lib.department_arbitration import arbitrate_departments
     from scripts.lib.runtime_heartbeat import RuntimeHeartbeatStore
+    from scripts.lib.ralph_mode import build_ralph_decision, ensure_ralph_prd, load_ralph_policy, run_ralph_loop
     from scripts.lib.runtime_governor import (
         allowed_actions_for_event,
         build_context_snapshot,
@@ -43,6 +44,7 @@ except ModuleNotFoundError:
     )
     from lib.department_arbitration import arbitrate_departments
     from lib.runtime_heartbeat import RuntimeHeartbeatStore
+    from lib.ralph_mode import build_ralph_decision, ensure_ralph_prd, load_ralph_policy, run_ralph_loop
     from lib.runtime_governor import (
         allowed_actions_for_event,
         build_context_snapshot,
@@ -126,6 +128,17 @@ def maybe_update_scorecard(project_dir: Path) -> bool:
 
 def classify_exception(exc: Exception) -> str:
     return exc.__class__.__name__
+
+
+def quality_gates_for_repo(project_dir: Path) -> list[str]:
+    gates: list[str] = []
+    if (project_dir / "tests").exists():
+        gates.append("python3 -m unittest discover -s tests -p 'test_*.py' -v")
+    if (project_dir / "install.sh").exists():
+        gates.append("bash install.sh --dry-run")
+    if not gates:
+        gates.append("git status --short")
+    return gates
 
 
 def run_project_runtime_event(project_dir: Path, event: str) -> dict[str, Any]:
@@ -248,6 +261,18 @@ def run_project_runtime_event(project_dir: Path, event: str) -> dict[str, Any]:
                 if agreement["result"] in {"object", "escalate"}:
                     allowed_actions = [item for item in allowed_actions if item != "bounded-edit"]
                     blocked_actions = list(dict.fromkeys([*blocked_actions, "bounded-edit"]))
+                ralph_policy = load_ralph_policy(claude_home_dir())
+                ralph_decision = build_ralph_decision(
+                    repo=project_dir,
+                    event=event,
+                    current_depth=int(depth_state["current_depth"]),
+                    top_action=ranking["top_action"],
+                    top_action_category=ranking["top_action_category"],
+                    approval_state=approval_state,
+                    governor=governor,
+                    agreement=agreement,
+                    policy=ralph_policy,
+                )
                 build_runtime_packet(
                     repo=project_dir,
                     event=event,
@@ -263,6 +288,8 @@ def run_project_runtime_event(project_dir: Path, event: str) -> dict[str, Any]:
                     blocked_actions=blocked_actions,
                     do_not_repeat=[f"Do not repeat {item}" for item in approval_state.get("pending", [])][:2],
                     agreement=agreement,
+                    execution_mode=ralph_decision["mode"],
+                    ralph=ralph_decision,
                 )
 
                 if not context_snapshot["context_ok"]:
@@ -293,12 +320,32 @@ def run_project_runtime_event(project_dir: Path, event: str) -> dict[str, Any]:
                     "skill_missing_count": len(skills["missing"]),
                     "skill_materialized_count": len(skills["materialized"]),
                     "trust_score": governor["trust_score"],
+                    "execution_mode": ralph_decision["mode"],
                 }
 
                 if event == "cron":
                     if agreement["result"] in {"object", "escalate"}:
                         summary = f"planning-only arbitration={agreement['result']}"
                         rc = 0
+                    elif ralph_decision["eligible"]:
+                        prd_path = ensure_ralph_prd(
+                            repo=project_dir,
+                            prd_path=Path(ralph_decision["prd_path"]),
+                            top_action=ranking["top_action"],
+                            goal=ranking["goal"],
+                            quality_gates=quality_gates_for_repo(project_dir),
+                        )
+                        ralph_summary = run_ralph_loop(
+                            repo=project_dir,
+                            prd_path=prd_path,
+                            agent=str(ralph_decision["agent"]),
+                        )
+                        summary = (
+                            f"ralph={ralph_summary['status']}, agent={ralph_summary['agent']}, "
+                            f"arbitration={agreement['result']}"
+                        )
+                        rc = 0 if ralph_summary["status"] == "executed" else 1
+                        runtime["ralph"] = ralph_summary
                     else:
                         summary, rc = run_project_cron(
                             project_dir,

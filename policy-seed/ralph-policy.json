@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "enabled_for_compound_brain": true,
+  "eligible_events": ["cron"],
+  "min_depth": 4,
+  "min_trust_score": 75,
+  "required_healthy_streak": 3,
+  "eligible_categories": ["feature", "debt", "research"],
+  "preferred_agent": "codex",
+  "default_prd_path": ".agents/tasks/prd-compound-brain-auto.json",
+  "auto_create_prd": true
+}

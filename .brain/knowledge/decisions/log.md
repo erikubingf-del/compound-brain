@@ -296,3 +296,30 @@ template, and maintainer review docs.
 core runtime changes require stronger evidence and review.
 
 ---
+
+## DEC-013 — `compound-brain` may auto-route eligible self-hosting cron work into Ralph
+**Date:** 2026-03-22
+**Priority:** P2
+**Context:** The self-hosting repo already had bounded cron execution, but some
+multi-step implementation lanes benefit from a fresh-context outer loop instead
+of repeatedly pushing deeper work through the normal cron executor.
+**Options Considered:**
+- Keep all self-hosting cron work on the normal bounded runtime
+- Make Ralph always-on for every `compound-brain` runtime event
+- Auto-route only eligible self-hosting cron work into a one-story Ralph loop
+**Reasoning:** Ralph is valuable when the work is multi-step and still
+deterministically gated, but making it universal would overload lightweight
+maintenance cycles. A narrow gate preserves cheap default cron behavior while
+still letting `compound-brain` use Ralph automatically for healthy,
+approved feature/debt/research lanes.
+**Expected Outcome:** Eligible `compound-brain` cron runs generate or refresh a
+single PRD, execute one Ralph iteration, and record durable Ralph state without
+changing the behavior of ordinary repos or low-trust self-hosting cycles.
+**Actual Outcome:** Implemented through `ralph-policy.json`,
+`scripts/lib/ralph_mode.py`, runtime packet mode selection, auto-generated PRD
+materialization, and cron-side Ralph dispatch.
+**Rule established:** Only `compound-brain` may auto-route into Ralph, only on
+eligible cron lanes, and only when depth, trust, healthy streak, approvals, and
+department agreement all pass the Ralph policy gate.
+
+---

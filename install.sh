@@ -224,6 +224,10 @@ if [[ ! -f "${POLICY_DIR}/required-context.json" ]]; then
   run "cp \"${REPO_DIR}/policy-seed/required-context.json\" \"${POLICY_DIR}/required-context.json\""
   ok "Seeded policy: required-context.json"
 fi
+if [[ ! -f "${POLICY_DIR}/ralph-policy.json" ]]; then
+  run "cp \"${REPO_DIR}/policy-seed/ralph-policy.json\" \"${POLICY_DIR}/ralph-policy.json\""
+  ok "Seeded policy: ralph-policy.json"
+fi
 
 # Decision log seed
 if [[ ! -f "${KNOWLEDGE_DIR}/decisions/log.md" ]]; then

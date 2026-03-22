@@ -174,3 +174,55 @@ class ProjectRuntimeEventTests(unittest.TestCase):
             cron = store.load(repo)["events"]["cron"]
             self.assertEqual(cron["status"], "failed")
             self.assertEqual(cron["backoff_minutes"], 15)
+
+    def test_compound_brain_cron_autoroutes_to_ralph_when_eligible(self) -> None:
+        with TemporaryDirectory() as tmp:
+            repo = Path(tmp) / "compound-brain"
+            repo.mkdir(parents=True)
+            subprocess.run(["git", "init"], cwd=str(repo), check=False, capture_output=True, text=True)
+            (repo / ".brain" / "memory").mkdir(parents=True)
+            (repo / ".brain" / "knowledge" / "daily").mkdir(parents=True)
+            (repo / ".brain" / "knowledge" / "decisions").mkdir(parents=True)
+            (repo / ".brain" / "knowledge" / "skills").mkdir(parents=True)
+            (repo / ".brain" / "knowledge" / "projects").mkdir(parents=True)
+            (repo / ".brain" / "state" / "departments").mkdir(parents=True)
+            (repo / ".brain" / "state").mkdir(parents=True, exist_ok=True)
+            (repo / ".brain" / "MEMORY.md").write_text("# Memory\n")
+            (repo / ".brain" / "memory" / "project_context.md").write_text("# Context\n")
+            (repo / ".brain" / "memory" / "feedback_rules.md").write_text("# Feedback\n")
+            (repo / ".brain" / "knowledge" / "projects" / f"{repo.name}.md").write_text("# Project\n")
+            (repo / ".brain" / "state" / "departments" / "engineering.json").write_text(
+                json.dumps({"status": "ready", "confidence_score": 0.9}) + "\n"
+            )
+            (repo / ".brain" / "state" / "departments" / "architecture.json").write_text(
+                json.dumps({"status": "ready", "confidence_score": 0.9}) + "\n"
+            )
+            (repo / ".claude" / "departments").mkdir(parents=True)
+            (repo / ".claude" / "settings.local.json").write_text(
+                json.dumps({"enabledDepartments": ["engineering", "architecture"]})
+            )
+            for department in ["engineering", "architecture"]:
+                (repo / ".claude" / "departments" / f"{department}.md").write_text(f"# {department}\n")
+            (repo / ".brain" / "state" / "approval-state.json").write_text(json.dumps({"state": "approved", "pending": []}))
+            (repo / ".brain" / "state" / "autonomy-depth.json").write_text(
+                json.dumps({"current_depth": 4, "allowed_max_depth": 5, "user_max_depth": 5, "recommended_next_depth": 5, "consecutive_healthy_cycles": 4}) + "\n"
+            )
+            (repo / ".brain" / "state" / "runtime-governor.json").write_text(
+                json.dumps({"trust_score": 82, "history": {"healthy_run_streak": 4}}) + "\n"
+            )
+            (repo / ".brain" / "autoresearch").mkdir(parents=True)
+            (repo / ".brain" / "autoresearch" / "program.md").write_text("# Program\n")
+            (repo / "CLAUDE.md").write_text("# Demo\n\n## Goal\nShip a demo.\n")
+            (repo / "README.md").write_text("# Demo\n")
+
+            with patch.dict("os.environ", {"COMPOUND_BRAIN_HOME": str(repo / ".global-brain")}):
+                with patch("scripts.project_runtime_event.refresh_ranked_actions", return_value={"top_action": "Implement runtime hardening lane", "top_action_category": "feature", "goal": "Keep the orchestrator self-improving"}):
+                    with patch("scripts.project_runtime_event.run_ralph_loop", return_value={"status": "executed", "mode": "ralph", "agent": "codex"}) as run_ralph_mock:
+                        with patch("scripts.project_runtime_event.run_project_cron") as run_project_cron_mock:
+                            result = run_project_runtime_event(repo, "cron")
+
+            self.assertEqual(result["status"], "ok")
+            self.assertEqual(result["execution_mode"], "ralph")
+            self.assertIn("ralph=executed", result["cron_summary"])
+            run_ralph_mock.assert_called_once()
+            run_project_cron_mock.assert_not_called()
