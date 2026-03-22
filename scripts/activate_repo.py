@@ -6,7 +6,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import re
 import subprocess
 import sys
 from pathlib import Path
@@ -21,6 +20,7 @@ try:
     from scripts.lib.activation_registry import ActivationRegistry
     from scripts.lib.audit_packet import build_audit_packet
     from scripts.lib.repo_preview_cache import RepoPreviewCache
+    from scripts.lib.repo_profile import build_department_surfaces, build_repo_profile, write_repo_profile
     from scripts.lib.skill_inventory import refresh_repo_skill_state
     from scripts.materialize_project_claude import materialize_project_claude
     from scripts.prepare_brain import prepare_brain
@@ -34,6 +34,7 @@ except ModuleNotFoundError:
     from lib.activation_registry import ActivationRegistry
     from lib.audit_packet import build_audit_packet
     from lib.repo_preview_cache import RepoPreviewCache
+    from lib.repo_profile import build_department_surfaces, build_repo_profile, write_repo_profile
     from lib.skill_inventory import refresh_repo_skill_state
     from materialize_project_claude import materialize_project_claude
     from prepare_brain import prepare_brain
@@ -193,6 +194,19 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Print machine-readable preflight output",
     )
+    parser.add_argument(
+        "--confirm",
+        action="store_true",
+        help="Persist the strategic goal and departments, using provided values or recommended defaults.",
+    )
+    parser.add_argument(
+        "--project-goal",
+        help="Confirmed project goal to persist with --confirm",
+    )
+    parser.add_argument(
+        "--departments",
+        help="Comma-separated department list to persist with --confirm",
+    )
     return parser
 
 
@@ -215,112 +229,6 @@ def build_preview_record(summary: dict[str, object], packet: dict[str, object]) 
     )
 
 
-def collect_repo_text_signals(repo_root: Path) -> str:
-    text_parts: list[str] = []
-    candidates = [
-        repo_root / "README.md",
-        repo_root / "ARCHITECTURE.md",
-        repo_root / "CLAUDE.md",
-    ]
-    docs_dir = repo_root / "docs"
-    if docs_dir.exists():
-        candidates.extend(sorted(docs_dir.glob("*.md"))[:5])
-    for path in candidates:
-        if not path.exists():
-            continue
-        try:
-            text_parts.append(path.read_text(encoding="utf-8", errors="replace")[:4000])
-        except OSError:
-            continue
-    return "\n".join(text_parts)
-
-
-def infer_recommended_project_goal(
-    repo_name: str, repo_text: str, fallback: str, repo_root: "Path | None" = None
-) -> str:
-    # Prefer explicit project_context.md — never infer when the human already wrote the goal.
-    # This prevents cross-repo context bleed entirely.
-    if repo_root is not None:
-        context_path = repo_root / ".brain" / "memory" / "project_context.md"
-        if context_path.exists():
-            lines = context_path.read_text(encoding="utf-8", errors="replace").splitlines()
-            for i, line in enumerate(lines):
-                if line.strip() == "## Goal" and i + 1 < len(lines):
-                    goal_text = lines[i + 1].strip()
-                    if goal_text:
-                        return goal_text
-            # project_context.md exists but has no Goal section — use fallback, not inference
-            return fallback
-
-    # Domain inference — scored by co-occurring specific signals, not single generic words.
-    # Each domain requires at least 2 hits from its signal list to avoid false positives.
-    lowered = repo_text.lower()
-
-    domains: list[tuple[int, str]] = []
-
-    def score(terms: list[str]) -> int:
-        return sum(1 for t in terms if t in lowered)
-
-    # Trading / quant finance
-    if score(["backtest", "alpha generation", "order book", "market microstructure", "tick data"]) >= 1 \
-            or score(["trading", "portfolio", "position sizing", "drawdown", "sharpe ratio"]) >= 2:
-        domains.append((score(["backtest", "trading", "portfolio", "alpha", "drawdown"]),
-                        f"Operate {repo_name} as a trading system that improves strategy quality, "
-                        "execution safety, and risk-aware iteration through evaluator-backed decisions."))
-
-    # SaaS / B2B product
-    if score(["tenant", "subscription", "billing", "onboarding", "saas", "crm", "multi-tenant"]) >= 2:
-        domains.append((score(["tenant", "subscription", "billing", "saas", "crm"]),
-                        f"Ship and operate {repo_name} as a reliable SaaS product — "
-                        "typed, tested, and observable — with tenant isolation and safe migrations."))
-
-    # ML / data science
-    if score(["training", "model", "dataset", "inference", "embedding", "fine-tune", "pytorch", "tensorflow"]) >= 2:
-        domains.append((score(["training", "model", "dataset", "inference", "embedding"]),
-                        f"Build and evaluate {repo_name} as an ML system — "
-                        "reproducible experiments, versioned models, and grounded inference pipelines."))
-
-    # API / backend service
-    if score(["rest api", "graphql", "grpc", "microservice", "endpoint", "middleware", "postgres", "redis"]) >= 2:
-        domains.append((score(["api", "endpoint", "middleware", "postgres", "redis"]),
-                        f"Build and operate {repo_name} as a reliable backend service — "
-                        "typed contracts, tested handlers, safe migrations, and observable production."))
-
-    # Frontend / design system
-    if score(["component", "storybook", "design system", "tailwind", "figma", "accessibility", "responsive"]) >= 2:
-        domains.append((score(["component", "design system", "tailwind", "accessibility"]),
-                        f"Build {repo_name} as a high-quality frontend — "
-                        "accessible, responsive components with a consistent design system."))
-
-    # DevOps / infra
-    if score(["terraform", "kubernetes", "helm", "dockerfile", "ci/cd", "pipeline", "deploy", "infra"]) >= 2:
-        domains.append((score(["terraform", "kubernetes", "dockerfile", "pipeline", "infra"]),
-                        f"Operate {repo_name} as a reliable infrastructure layer — "
-                        "reproducible environments, safe deploys, and observable production systems."))
-
-    # CLI / developer tool
-    if score(["cli", "command-line", "argparse", "cobra", "clap", "subcommand", "flag"]) >= 2:
-        domains.append((score(["cli", "command-line", "subcommand"]),
-                        f"Build {repo_name} as a polished developer CLI — "
-                        "discoverable commands, clear errors, and tested end-to-end flows."))
-
-    if domains:
-        # Return the goal from the highest-scoring domain
-        domains.sort(key=lambda x: -x[0])
-        return domains[0][1]
-
-    return fallback
-
-
-def detect_department_structure(repo_text: str) -> list[str]:
-    matches = re.findall(r"\bD\d{2}\b", repo_text)
-    ordered: list[str] = []
-    for item in matches:
-        if item not in ordered:
-            ordered.append(item)
-    return ordered
-
-
 def department_range_label(departments: list[str]) -> str:
     if not departments:
         return ""
@@ -329,16 +237,13 @@ def department_range_label(departments: list[str]) -> str:
     return f"{departments[0]}–{departments[-1]}"
 
 
-def build_activation_recommendation(summary: dict[str, object], packet: dict[str, object]) -> dict[str, object]:
-    repo_root = Path(str(summary["repo_path"]))
-    repo_text = collect_repo_text_signals(repo_root)
-    recommended_goal = infer_recommended_project_goal(
-        str(summary["repo_name"]),
-        repo_text,
-        str(packet["project_goal_candidates"][0]),
-        repo_root=repo_root,
-    )
-    detected_departments = detect_department_structure(repo_text)
+def build_activation_recommendation(
+    summary: dict[str, object],
+    packet: dict[str, object],
+    profile: dict[str, object],
+) -> dict[str, object]:
+    recommended_goal = str(profile.get("project_goal", packet["project_goal_candidates"][0]))
+    detected_departments = list(profile.get("repo_native_departments", []))
     recommended_departments = detected_departments or list(packet["departments"])
 
     message = (
@@ -359,6 +264,39 @@ def build_activation_recommendation(summary: dict[str, object], packet: dict[str
     }
 
 
+def parse_departments(raw: str | None) -> list[str]:
+    if not raw:
+        return []
+    return [item.strip() for item in raw.split(",") if item.strip()]
+
+
+def resolve_confirmation(
+    args: argparse.Namespace,
+    recommendation: dict[str, object],
+    packet: dict[str, object],
+) -> tuple[str, list[str]]:
+    default_goal = str(
+        args.project_goal
+        or recommendation.get("recommended_project_goal")
+        or packet["project_goal_candidates"][0]
+    )
+    default_departments = (
+        parse_departments(args.departments)
+        or list(recommendation.get("recommended_departments", []))
+        or list(packet["departments"])
+    )
+    if args.confirm and sys.stdin.isatty() and not args.project_goal and not args.departments:
+        entered_goal = input(f"Project goal [{default_goal}]: ").strip()
+        entered_departments = input(
+            f"Departments [{', '.join(default_departments)}]: "
+        ).strip()
+        return (
+            entered_goal or default_goal,
+            parse_departments(entered_departments) or default_departments,
+        )
+    return default_goal, default_departments
+
+
 def main() -> int:
     args = build_parser().parse_args()
     try:
@@ -373,15 +311,38 @@ def main() -> int:
         docs_present=bool(summary["docs"]),
         ci_present=(Path(summary["repo_path"]) / ".github" / "workflows").exists(),
     )
+    repo_root = Path(str(summary["repo_path"]))
+    profile = build_repo_profile(
+        repo_root=repo_root,
+        repo_name=str(summary["repo_name"]),
+        tech_stack=list(summary["stack"]),
+        docs_present=bool(summary["docs"]),
+        ci_present=(repo_root / ".github" / "workflows").exists(),
+        default_departments=list(packet["departments"]),
+        fallback_goal=str(packet["project_goal_candidates"][0]),
+    )
+    packet["departments"] = list(profile["departments"])
+    packet["department_goals"] = {
+        department: f"Improve {summary['repo_name']} through {department}-led decisions and execution"
+        for department in packet["departments"]
+    }
+    packet["project_goal_candidates"] = [
+        str(profile["project_goal"]),
+        *[
+            candidate
+            for candidate in packet["project_goal_candidates"]
+            if candidate != profile["project_goal"]
+        ],
+    ]
     summary["preview_record"] = build_preview_record(summary, packet)
     summary["departments"] = packet["departments"]
     summary["project_goal_candidates"] = packet["project_goal_candidates"]
-    summary["recommendation"] = build_activation_recommendation(summary, packet)
+    summary["recommendation"] = build_activation_recommendation(summary, packet, profile)
+    summary["repo_profile"] = profile
 
     if args.check_only:
         summary["next_state"] = "preview-ready"
     else:
-        repo_root = Path(summary["repo_path"])
         policy = ensure_global_policy(claude_home_dir())
         if (
             not summary["has_brain"]
@@ -389,12 +350,49 @@ def main() -> int:
             or not (repo_root / ".codex" / "AGENTS.md").exists()
         ):
             prepare_brain(repo_root)
-        materialize_project_claude(repo_root, list(packet["departments"]))
         approval_store = ApprovalStateStore(repo_root / ".brain" / "state")
-        approval_state = approval_store.initialize(
-            project_goal_candidates=list(packet["project_goal_candidates"]),
-            departments=list(packet["departments"]),
-            recommendation=dict(summary["recommendation"]),
+        if approval_store.state_path.exists():
+            approval_state = approval_store.load()
+        else:
+            approval_state = approval_store.initialize(
+                project_goal_candidates=list(packet["project_goal_candidates"]),
+                departments=list(packet["departments"]),
+                recommendation=dict(summary["recommendation"]),
+            )
+
+        selected_departments = list(packet["departments"])
+        selected_department_goals = dict(packet["department_goals"])
+        if args.confirm:
+            confirmed_goal, confirmed_departments = resolve_confirmation(
+                args,
+                dict(summary["recommendation"]),
+                packet,
+            )
+            selected_departments = confirmed_departments
+            selected_department_goals = {
+                department: f"Advance the confirmed project goal through {department}"
+                for department in confirmed_departments
+            }
+            approval_state = approval_store.confirm_strategy(
+                project_goal=confirmed_goal,
+                departments=confirmed_departments,
+                department_goals=selected_department_goals,
+            )
+
+        profile["department_surfaces"] = build_department_surfaces(repo_root, selected_departments)
+        write_repo_profile(
+            repo_root,
+            {
+                **profile,
+                "departments": selected_departments,
+                "context_files": profile["context_files"],
+            },
+        )
+        materialize_project_claude(
+            repo_root,
+            selected_departments,
+            department_surfaces=dict(profile["department_surfaces"]),
+            department_goals=selected_department_goals,
         )
         depth_state = initialize_repo_depth_state(repo_root, policy)
         initialize_runtime_state(repo_root, depth_state)
@@ -411,7 +409,7 @@ def main() -> int:
         summary["approval_state"] = approval_state["state"]
         summary["current_depth"] = depth_state["current_depth"]
         summary["skill_state"] = refresh_repo_skill_state(repo_root, claude_home=claude_home_dir())
-        summary["next_state"] = "awaiting-strategic-confirmation"
+        summary["next_state"] = "activated" if args.confirm else "awaiting-strategic-confirmation"
 
     if args.json:
         print(json.dumps(summary, indent=2))
@@ -442,18 +440,27 @@ def main() -> int:
             )
         print(f"depth: {summary.get('current_depth', 'unknown')}")
         print("strategic confirmations: project goal, department goals, major architecture changes")
-        recommendation = summary.get("recommendation", {})
-        if isinstance(recommendation, dict) and recommendation:
-            print(f"Recommendation: {recommendation['message']}")
+        if summary.get("approval_state") == "approved":
+            state = json.loads((repo_root / ".brain" / "state" / "approval-state.json").read_text())
+            print(f"project goal: {state.get('project_goal', summary['project_goal_candidates'][0])}")
+            print("next state: activated")
+        else:
+            recommendation = summary.get("recommendation", {})
+            if isinstance(recommendation, dict) and recommendation:
+                print(f"Recommendation: {recommendation['message']}")
+                print(
+                    "  proposed project_goal: "
+                    f"{recommendation.get('recommended_project_goal', summary['project_goal_candidates'][0])}"
+                )
+                recommended_departments = recommendation.get("recommended_departments", [])
+                if recommended_departments:
+                    print("  proposed departments: " + ", ".join(recommended_departments))
+                print("  Want me to do that?")
             print(
-                "  proposed project_goal: "
-                f"{recommendation.get('recommended_project_goal', summary['project_goal_candidates'][0])}"
+                "confirm with: "
+                f"python3 scripts/activate_repo.py --project-dir {repo_root} --confirm"
             )
-            recommended_departments = recommendation.get("recommended_departments", [])
-            if recommended_departments:
-                print("  proposed departments: " + ", ".join(recommended_departments))
-            print("  Want me to do that?")
-        print("next state: awaiting strategic confirmation")
+            print("next state: awaiting strategic confirmation")
     return 0
 
 

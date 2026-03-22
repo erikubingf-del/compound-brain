@@ -4,9 +4,12 @@
 from __future__ import annotations
 
 import argparse
+import io
 import json
 import os
+import sys
 import time
+from contextlib import redirect_stdout
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -143,6 +146,11 @@ def quality_gates_for_repo(project_dir: Path) -> list[str]:
     return gates
 
 
+def emit_runtime_note(message: str) -> None:
+    if os.environ.get("COMPOUND_BRAIN_RUNTIME_VERBOSE", "").lower() in {"1", "true", "yes"}:
+        print(message, file=sys.stderr)
+
+
 def run_project_runtime_event(project_dir: Path, event: str) -> dict[str, Any]:
     project_dir = project_dir.resolve()
     if not is_activated_repo(project_dir):
@@ -152,9 +160,11 @@ def run_project_runtime_event(project_dir: Path, event: str) -> dict[str, Any]:
     if event == "session-start":
         try:
             reg = register_session(project_dir)
-            print(f"Session loaded. Registering as Agent-{reg['agent_id']} in {reg['registry_path']}.")
+            emit_runtime_note(
+                f"Session loaded. Registering as Agent-{reg['agent_id']} in {reg['registry_path']}."
+            )
             if reg["last_task"]:
-                print(f"Last session: {reg['last_task']}")
+                emit_runtime_note(f"Last session: {reg['last_task']}")
         except Exception:
             pass  # never block session start
 
@@ -407,6 +417,8 @@ def main() -> int:
     parser.add_argument("--project-dir", help="Single activated project")
     parser.add_argument("--event", choices=["session-start", "stop", "cron"], required=True)
     parser.add_argument("--all-activated", action="store_true", help="Run for all activated projects from the registry")
+    parser.add_argument("--json-output", action="store_true", help="Emit final runtime result as JSON on stdout")
+    parser.add_argument("--verbose", action="store_true", help="Mirror internal runtime notes to stderr")
     args = parser.parse_args()
 
     if args.all_activated:
@@ -416,12 +428,22 @@ def main() -> int:
     else:
         projects = [Path.cwd().resolve()]
 
+    if args.verbose:
+        os.environ["COMPOUND_BRAIN_RUNTIME_VERBOSE"] = "1"
+
+    results: list[dict[str, Any]] = []
     for project_dir in projects:
-        result = run_project_runtime_event(project_dir, args.event)
-        print(
-            f"[project-runtime:{args.event}] {project_dir}: "
-            f"{json.dumps(result, sort_keys=True)}"
-        )
+        captured_stdout = io.StringIO()
+        with redirect_stdout(captured_stdout):
+            result = run_project_runtime_event(project_dir, args.event)
+        noisy_output = captured_stdout.getvalue().strip()
+        if args.verbose and noisy_output:
+            print(noisy_output, file=sys.stderr)
+        results.append(result)
+
+    if args.json_output:
+        payload: Any = results[0] if len(results) == 1 else results
+        print(json.dumps(payload, sort_keys=True))
     return 0
 
 

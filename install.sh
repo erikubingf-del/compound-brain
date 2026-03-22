@@ -28,6 +28,46 @@ warn() { echo -e "${YELLOW}  ⚠${RESET} $1"; }
 err()  { echo -e "${RED}  ✗${RESET} $1"; }
 run()  { $DRY_RUN && echo "  [dry-run] $*" || eval "$@"; }
 
+surface_find_files() {
+  local root="$1"
+  find "$root" -type f \
+    ! -path '*/__pycache__/*' \
+    ! -name '*.pyc' \
+    ! -name '.DS_Store' \
+    | sort
+}
+
+verify_surface_coverage() {
+  local label="$1"
+  local source_root="$2"
+  local target_root="$3"
+
+  if $DRY_RUN; then
+    echo "  [dry-run] verify ${label} coverage: ${source_root} -> ${target_root}"
+    return 0
+  fi
+
+  local missing=()
+  while IFS= read -r source_file; do
+    [[ -f "$source_file" ]] || continue
+    local relative_path="${source_file#${source_root}/}"
+    local target_file="${target_root}/${relative_path}"
+    if [[ ! -e "$target_file" ]]; then
+      missing+=("$relative_path")
+    fi
+  done < <(surface_find_files "$source_root")
+
+  if (( ${#missing[@]} > 0 )); then
+    err "Verification failed for ${label}: ${#missing[@]} missing file(s)"
+    for path in "${missing[@]:0:10}"; do
+      echo "    - $path"
+    done
+    return 1
+  fi
+
+  ok "Verified ${label} coverage"
+}
+
 for arg in "$@"; do
   case $arg in
     --dry-run)    DRY_RUN=true ;;
@@ -182,7 +222,7 @@ while IFS= read -r brain_file; do
   run "mkdir -p \"$(dirname "${BRAIN_TEMPLATE_INSTALL_DIR}/${rel_path}")\""
   run "cp \"$brain_file\" \"${BRAIN_TEMPLATE_INSTALL_DIR}/${rel_path}\""
   ok "Installed brain template: ${rel_path}"
-done < <(find "${REPO_DIR}/brain-template" -type f | sort)
+done < <(surface_find_files "${REPO_DIR}/brain-template")
 
 for agent_file in "${REPO_DIR}/agents/"*.md; do
   [[ -f "$agent_file" ]] || continue
@@ -301,6 +341,15 @@ See [decisions/log.md](decisions/log.md) for the strategic decision history.
 EOF
   ok "Created: _index.md"
 fi
+
+echo ""
+echo "[ verify ] Verifying installed surfaces..."
+verify_surface_coverage "scripts" "${REPO_DIR}/scripts" "${SCRIPTS_DIR}"
+verify_surface_coverage "project_claude templates" "${REPO_DIR}/templates/project_claude" "${TEMPLATES_DIR}"
+verify_surface_coverage "project_codex templates" "${REPO_DIR}/templates/project_codex" "${CODEX_TEMPLATES_DIR}"
+verify_surface_coverage "agents" "${REPO_DIR}/agents" "${AGENTS_DIR}"
+verify_surface_coverage "brain-template" "${REPO_DIR}/brain-template" "${BRAIN_TEMPLATE_INSTALL_DIR}"
+verify_surface_coverage "policy-seed" "${REPO_DIR}/policy-seed" "${POLICY_DIR}"
 
 # ─── Step 4: Configure Claude Code hooks ────────────────────────────────────
 echo ""

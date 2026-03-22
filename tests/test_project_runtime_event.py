@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import json
@@ -10,6 +11,75 @@ from scripts.project_runtime_event import run_project_runtime_event
 
 
 class ProjectRuntimeEventTests(unittest.TestCase):
+    def test_runtime_cli_is_silent_by_default_for_hook_use(self) -> None:
+        with TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            subprocess.run(["git", "init"], cwd=str(repo), check=False, capture_output=True, text=True)
+            (repo / ".brain" / "knowledge" / "projects").mkdir(parents=True)
+            (repo / ".brain" / "memory").mkdir(parents=True)
+            (repo / ".brain" / "knowledge" / "daily").mkdir(parents=True)
+            (repo / ".brain" / "knowledge" / "decisions").mkdir(parents=True)
+            (repo / ".brain" / "knowledge" / "skills").mkdir(parents=True)
+            (repo / ".brain" / "state").mkdir(parents=True)
+            (repo / ".claude").mkdir(parents=True)
+            (repo / ".claude" / "settings.local.json").write_text(json.dumps({"enabledDepartments": ["engineering"]}))
+            (repo / ".brain" / "state" / "approval-state.json").write_text(json.dumps({"state": "approved", "pending": []}))
+            (repo / ".brain" / "MEMORY.md").write_text("# Memory\n")
+            (repo / ".brain" / "memory" / "project_context.md").write_text("# Context\n")
+            (repo / ".brain" / "memory" / "feedback_rules.md").write_text("# Feedback\n")
+            (repo / ".brain" / "knowledge" / "projects" / f"{repo.name}.md").write_text("# Project\n")
+            (repo / "CLAUDE.md").write_text("# Demo\n\n## Goal\nShip a demo.\n")
+            (repo / "README.md").write_text("# Demo\n")
+            script = Path(__file__).resolve().parents[1] / "scripts" / "project_runtime_event.py"
+            env = dict(os.environ)
+            env["COMPOUND_BRAIN_HOME"] = str(repo / ".global-brain")
+            result = subprocess.run(
+                ["python3", str(script), "--event", "stop", "--project-dir", str(repo)],
+                cwd=str(Path(__file__).resolve().parents[1]),
+                capture_output=True,
+                text=True,
+                env=env,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, msg=result.stderr)
+            self.assertEqual(result.stdout, "")
+
+    def test_runtime_cli_can_emit_valid_json_on_demand(self) -> None:
+        with TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            subprocess.run(["git", "init"], cwd=str(repo), check=False, capture_output=True, text=True)
+            (repo / ".brain" / "knowledge" / "projects").mkdir(parents=True)
+            (repo / ".brain" / "memory").mkdir(parents=True)
+            (repo / ".brain" / "knowledge" / "daily").mkdir(parents=True)
+            (repo / ".brain" / "knowledge" / "decisions").mkdir(parents=True)
+            (repo / ".brain" / "knowledge" / "skills").mkdir(parents=True)
+            (repo / ".brain" / "state").mkdir(parents=True)
+            (repo / ".claude").mkdir(parents=True)
+            (repo / ".claude" / "settings.local.json").write_text(json.dumps({"enabledDepartments": ["engineering"]}))
+            (repo / ".brain" / "state" / "approval-state.json").write_text(json.dumps({"state": "approved", "pending": []}))
+            (repo / ".brain" / "MEMORY.md").write_text("# Memory\n")
+            (repo / ".brain" / "memory" / "project_context.md").write_text("# Context\n")
+            (repo / ".brain" / "memory" / "feedback_rules.md").write_text("# Feedback\n")
+            (repo / ".brain" / "knowledge" / "projects" / f"{repo.name}.md").write_text("# Project\n")
+            (repo / "CLAUDE.md").write_text("# Demo\n\n## Goal\nShip a demo.\n")
+            (repo / "README.md").write_text("# Demo\n")
+            script = Path(__file__).resolve().parents[1] / "scripts" / "project_runtime_event.py"
+            env = dict(os.environ)
+            env["COMPOUND_BRAIN_HOME"] = str(repo / ".global-brain")
+            result = subprocess.run(
+                ["python3", str(script), "--event", "stop", "--project-dir", str(repo), "--json-output"],
+                cwd=str(Path(__file__).resolve().parents[1]),
+                capture_output=True,
+                text=True,
+                env=env,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, msg=result.stderr)
+            payload = json.loads(result.stdout)
+            self.assertEqual(payload["status"], "ok")
+
     def test_session_start_refreshes_brief_and_action_queue_for_activated_repo(self) -> None:
         with TemporaryDirectory() as tmp:
             repo = Path(tmp)

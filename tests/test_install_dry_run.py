@@ -17,3 +17,5 @@ class InstallDryRunTests(unittest.TestCase):
         self.assertNotIn("Not found (skipping): nightly_review.sh", result.stdout)
         self.assertIn("brain-template/MEMORY.md", result.stdout)
         self.assertIn("agents/architecture_program.md", result.stdout)
+        self.assertIn("verify scripts coverage", result.stdout)
+        self.assertIn("verify brain-template coverage", result.stdout)

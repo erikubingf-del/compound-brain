@@ -42,3 +42,22 @@ class ApprovalStateTests(unittest.TestCase):
             pending_md = (repo / ".brain" / "state" / "pending-approvals.md").read_text()
             self.assertIn("## Recommendation", pending_md)
             self.assertIn("Want me to do that?", pending_md)
+
+    def test_confirm_strategy_persists_goal_and_departments(self) -> None:
+        with TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            store = ApprovalStateStore(repo / ".brain" / "state")
+            store.initialize(
+                project_goal_candidates=["Ship activation"],
+                departments=["architecture", "engineering"],
+            )
+
+            state = store.confirm_strategy(
+                project_goal="Ship CRM V2 reliably",
+                departments=["engineering", "product", "operations"],
+            )
+
+            self.assertEqual(state["state"], "approved")
+            self.assertEqual(state["pending"], [])
+            self.assertEqual(state["project_goal"], "Ship CRM V2 reliably")
+            self.assertEqual(state["departments"], ["engineering", "product", "operations"])

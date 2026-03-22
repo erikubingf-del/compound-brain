@@ -90,6 +90,26 @@ class ApprovalStateStore:
         self.write_pending_markdown(payload)
         return payload
 
+    def confirm_strategy(
+        self,
+        project_goal: str,
+        departments: list[str],
+        department_goals: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
+        payload = self.load()
+        payload["state"] = "approved"
+        payload["pending"] = []
+        payload["project_goal"] = project_goal
+        payload["departments"] = departments
+        payload["department_goals"] = department_goals or {
+            department: f"Advance the confirmed project goal through {department}"
+            for department in departments
+        }
+        payload["updated_at"] = now_utc()
+        self.save(payload)
+        self.write_pending_markdown(payload)
+        return payload
+
     def record_transition(
         self,
         state: str,
