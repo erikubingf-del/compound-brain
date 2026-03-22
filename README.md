@@ -134,6 +134,11 @@ The runtime always gates before acting:
 - bounded action selection
 - logged result
 
+Activated repos also get real event loops:
+- `SessionStart` refreshes audit, intelligence brief, and ranked actions
+- `Stop` refreshes project state and updates self-hosting scorecards when relevant
+- repo cron refreshes audit and briefs, then runs department and autoresearch cycles
+
 ## Autoresearch
 
 Autoresearch is fixed-evaluator only.
@@ -166,6 +171,7 @@ Implemented in the current MVP branch:
 - activation approvals
 - department contracts and state
 - bounded department-cycle runtime
+- shared project runtime event engine for session start, stop, and cron autoimprovement
 - evaluator-backed autoresearch execution with keep/discard results
 - local skill promotion, global promotion inbox, scheduled review, and approved
   promotion application into canonical global knowledge

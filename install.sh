@@ -118,6 +118,7 @@ SCRIPTS=(
   "nightly_review.sh"
   "prepare_brain.py"
   "project_intelligence.py"
+  "project_runtime_event.py"
   "global_intelligence_sweeper.py"
   "intelligence_brief_hook.py"
   "project_auditor.py"
@@ -293,6 +294,12 @@ if [[ ! -f "$SETTINGS_FILE" ]]; then
             "command": "${PYTHON_BIN} \"${SCRIPTS_DIR}/intelligence_brief_hook.py\" 2>/dev/null",
             "timeout": 3,
             "statusMessage": "Loading AI intelligence brief..."
+          },
+          {
+            "type": "command",
+            "command": "${PYTHON_BIN} \"${SCRIPTS_DIR}/project_runtime_event.py\" --event session-start --project-dir . 2>/dev/null",
+            "timeout": 8,
+            "statusMessage": "Refreshing project runtime..."
           }
         ]
       }
@@ -304,6 +311,11 @@ if [[ ! -f "$SETTINGS_FILE" ]]; then
             "type": "command",
             "command": "bash \"${SCRIPTS_DIR}/nightly_review.sh\" 2>/dev/null",
             "timeout": 8
+          },
+          {
+            "type": "command",
+            "command": "${PYTHON_BIN} \"${SCRIPTS_DIR}/project_runtime_event.py\" --event stop --project-dir . 2>/dev/null",
+            "timeout": 10
           }
         ]
       }
@@ -372,7 +384,7 @@ install_cron "COMPOUND_GLOBAL_SWEEP" \
   "30 */6 * * * ${PYTHON_BIN} ${SCRIPTS_DIR}/global_intelligence_sweeper.py >> /tmp/compound_global_sweep.log 2>&1 # COMPOUND_GLOBAL_SWEEP"
 
 install_cron "COMPOUND_PROJECT_LLM_CRON" \
-  "0 */6 * * * ${PYTHON_BIN} ${PROJECT_CRON_SCRIPT} >> /tmp/compound_project_llm_cron.log 2>&1 # COMPOUND_PROJECT_LLM_CRON"
+  "0 */6 * * * ${PYTHON_BIN} ${SCRIPTS_DIR}/project_runtime_event.py --event cron --all-activated >> /tmp/compound_project_llm_cron.log 2>&1 # COMPOUND_PROJECT_LLM_CRON"
 
 install_cron "COMPOUND_GITHUB_INTEL" \
   "0 9 * * 0 ${PYTHON_BIN} ${SCRIPTS_DIR}/github_intelligence.py >> /tmp/compound_github_intel.log 2>&1 # COMPOUND_GITHUB_INTEL"

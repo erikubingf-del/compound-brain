@@ -18,6 +18,7 @@ def managed_block(claude_home: Path) -> str:
             "Session start protocol:",
             "- Read `~/.claude/BRAIN.md`.",
             "- Run `python3 ~/.claude/scripts/activate_repo.py --project-dir . --check-only` in repos.",
+            "- If the repo is activated, run `python3 ~/.claude/scripts/project_runtime_event.py --event session-start --project-dir .`.",
             "- If the repo is prepared or activated, read `CLAUDE.md`, `.brain/`, and `.claude/` when present.",
             "- Do not create a parallel repo memory or runtime outside `.brain/` and `.claude/`.",
             "",

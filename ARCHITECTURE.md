@@ -68,6 +68,12 @@ Cycle shape:
 - log result
 - stop or escalate
 
+Hook and cron wiring:
+- `project_session_start.py` dispatches to the shared runtime event engine
+- `project_stop.py` dispatches to the shared runtime event engine
+- `project_llm_cron.py` dispatches to the shared runtime event engine
+- the shared engine refreshes audits, intelligence briefs, ranked actions, and bounded runtime cycles
+
 ## Approval model
 
 Strategic approvals live in:

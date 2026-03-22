@@ -18,3 +18,7 @@ class ProjectMaterializationTests(unittest.TestCase):
             self.assertTrue(
                 (repo / ".claude" / "departments" / "engineering.md").exists()
             )
+            self.assertIn(
+                "project_runtime_event.py",
+                (repo / ".claude" / "hooks" / "project_session_start.py").read_text(),
+            )
