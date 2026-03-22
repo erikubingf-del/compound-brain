@@ -22,3 +22,9 @@ Each submission should include:
 - examples of when it should not be used
 
 Use [TEMPLATE.md](./TEMPLATE.md) as the contribution shape.
+
+## Available Skills
+
+| Skill | Best Fit | Trigger |
+|-------|----------|---------|
+| [ui-master](./ui-master/SKILL.md) | Next.js, React, SaaS frontend, dashboard, CRM | `.tsx`/`.jsx` present, UI/design request |
