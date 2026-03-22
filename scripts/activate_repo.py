@@ -235,19 +235,32 @@ def collect_repo_text_signals(repo_root: Path) -> str:
     return "\n".join(text_parts)
 
 
-def infer_recommended_project_goal(repo_name: str, repo_text: str, fallback: str) -> str:
+def infer_recommended_project_goal(
+    repo_name: str, repo_text: str, fallback: str, repo_root: "Path | None" = None
+) -> str:
+    # Prefer explicit project_context.md — never infer when the human already wrote the goal.
+    # This prevents cross-repo context bleed entirely.
+    if repo_root is not None:
+        context_path = repo_root / ".brain" / "memory" / "project_context.md"
+        if context_path.exists():
+            lines = context_path.read_text(encoding="utf-8", errors="replace").splitlines()
+            for i, line in enumerate(lines):
+                if line.strip() == "## Goal" and i + 1 < len(lines):
+                    goal_text = lines[i + 1].strip()
+                    if goal_text:
+                        return goal_text
+            # project_context.md exists but has no Goal section — use fallback, not inference
+            return fallback
+
+    # Inference: require co-occurring domain-specific signals.
+    # Avoid matching generic words like "risk", "strategy", "execution" that appear
+    # in any business or software repo and cause false positives.
     lowered = repo_text.lower()
-    trading_terms = [
-        "trading system",
-        "backtest",
-        "portfolio",
-        "execution",
-        "market structure",
-        "risk",
-        "alpha",
-        "strategy",
-    ]
-    if any(term in lowered for term in trading_terms):
+    trading_specific = ["backtest", "alpha generation", "order book", "market microstructure", "tick data"]
+    trading_generic = ["trading", "portfolio", "position sizing", "drawdown", "sharpe ratio"]
+    specific_hits = sum(1 for t in trading_specific if t in lowered)
+    generic_hits = sum(1 for t in trading_generic if t in lowered)
+    if specific_hits >= 1 or generic_hits >= 2:
         return (
             f"Operate {repo_name} as a trading system that improves strategy quality, "
             "execution safety, and risk-aware iteration through evaluator-backed decisions."
@@ -279,6 +292,7 @@ def build_activation_recommendation(summary: dict[str, object], packet: dict[str
         str(summary["repo_name"]),
         repo_text,
         str(packet["project_goal_candidates"][0]),
+        repo_root=repo_root,
     )
     detected_departments = detect_department_structure(repo_text)
     recommended_departments = detected_departments or list(packet["departments"])

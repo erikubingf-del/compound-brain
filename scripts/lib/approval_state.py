@@ -69,6 +69,11 @@ class ApprovalStateStore:
         departments: list[str],
         recommendation: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
+        # Never overwrite an already-approved state — human approval is durable.
+        existing = self.load()
+        if existing.get("state") == "approved":
+            return existing
+
         payload = {
             "state": "awaiting-project-goal",
             "pending": ["project_goal", "department_goals"],
