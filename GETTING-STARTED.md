@@ -1,0 +1,235 @@
+# Getting Started with compound-brain
+
+This guide explains what happens after you run `install.sh` and activate your
+first repo. It answers the three questions that trip up most new users:
+
+1. How do departments actually work?
+2. What does autonomy-depth mean in practice?
+3. Where does knowledge go — global vs per-repo vs state?
+
+---
+
+## What activation gives you
+
+After running `activate_repo.py` on your repo, four things are live:
+
+```
+your-repo/
+├── CLAUDE.md                        ← instructions loaded by Claude Code / Codex
+├── .brain/
+│   ├── memory/
+│   │   ├── project_context.md       ← goal, stack, current state (edit this)
+│   │   └── feedback_rules.md        ← how you want the AI to behave
+│   ├── knowledge/                   ← PARA knowledge for this repo (git-track)
+│   │   ├── projects/, areas/, resources/, qmp/, decisions/, skills/
+│   │   └── daily/, weekly/          ← session logs (.gitignore these)
+│   └── state/                       ← runtime files (.gitignore these)
+│       ├── skills.json              ← active, recommended, missing skills
+│       ├── autonomy-depth.json      ← current depth + trust score
+│       └── departments/             ← per-dept action state
+└── .claude/
+    ├── departments/                 ← dept contracts (owned surfaces, allowed actions)
+    ├── hooks/                       ← session-start, stop, cron wiring
+    └── settings.local.json          ← tool permissions
+```
+
+---
+
+## How departments work
+
+Departments are the governance layer. They decide what the AI is allowed to do
+autonomously, and gate changes that affect their surfaces.
+
+**Default departments:**
+- `architecture` — owns structural decisions, gates control-plane changes
+- `engineering` — owns implementation, tests, deps
+- `product` — owns user-facing features, copy, UX
+- `research` — owns experiments, evaluations, external references
+
+**A concrete cycle (what happens on session-start at depth 3):**
+
+```
+1. SessionStart hook fires
+2. Runtime reads .brain/state/action-queue.md
+   (probability engine ranked: bug-fix P1, test-coverage P2, refactor P3)
+
+3. Engineering dept is the lead for P1 (bug-fix)
+   → Engineering reads its contract: .claude/departments/engineering.md
+   → Engineering checks: is this action in my allowed list? yes
+   → Engineering proposes action to .brain/state/department-agreement.json
+
+4. Architecture reviews the proposal
+   → Is this a control-plane change? no → agrees
+   → No other dept objects
+
+5. Action executes (bounded: one action, one cycle)
+6. Result logged to .brain/knowledge/daily/YYYY-MM-DD.md
+
+7. If architecture had objected:
+   → Depth does not drop, but action is blocked
+   → Human sees the objection in the next session-start summary
+   → Human resolves by editing .brain/state/approval-state.json or dept contract
+```
+
+**The key rule:** one lead department owns the action. Supporting departments
+can agree, agree with constraints, or object. Operations and architecture
+objections are hard blocks. Product and research objections are soft signals.
+
+**To change what a dept owns or allows:**
+Edit `.claude/departments/<department>.md`. Strategic changes go through an
+approval (written to `.brain/state/approval-state.json`).
+
+---
+
+## What autonomy-depth means
+
+Depth is a number from 0 to 5. It controls how much the runtime does on its own.
+
+| Depth | What the runtime can do |
+|-------|------------------------|
+| 0 | Preview only — reads repo, writes nothing |
+| 1 | Memory only — writes `.brain/` knowledge, no execution |
+| 2 | Bounded planning — can propose actions, no execution |
+| 3 | Bounded execution — can execute approved actions per dept cycle |
+| 4 | Evaluator-backed experiments — can run autoresearch with fixed evaluator |
+| 5 | High autonomy — broader execution within approved surfaces |
+
+**Trust score** controls when depth raises or lowers:
+
+```
+Trust score = weighted sum of:
+  - recent approval compliance (did you approve suggested actions?)
+  - healthy streak (consecutive days with no failures)
+  - skill coverage (are the right skills active for this repo's stack?)
+  - dept agreement rate (are depts aligned, or always objecting?)
+  - heartbeat health (is cron running without failures?)
+```
+
+Depth rises when trust score clears the raise threshold for your current depth.
+Depth drops when approvals are pending too long, cron fails repeatedly, or an
+architecture objection is unresolved.
+
+**To see current status:**
+```bash
+cat .brain/state/autonomy-depth.json
+cat .brain/state/runtime-governor.json
+```
+
+**Most repos should start at depth 2, reach depth 3 within a week of normal
+use, and stay there.** Depth 4+ requires autoresearch enablement and a validated
+evaluator contract — you explicitly enable this, it does not happen automatically.
+
+---
+
+## Where knowledge goes
+
+Three locations, three purposes:
+
+```
+~/.claude/knowledge/      GLOBAL — cross-project patterns
+                          Put here: QMP entries that apply to any repo,
+                          skills you want everywhere, decisions that set
+                          cross-project rules
+
+<repo>/.brain/knowledge/  PER-REPO — project-specific knowledge
+                          Put here: this repo's project notes, decisions,
+                          daily logs, skills, QMP patterns specific to
+                          this domain
+
+<repo>/.brain/state/      RUNTIME STATE — not knowledge
+                          This is machine-written. Do not edit directly.
+                          It tracks: depth, trust, dept state, skill cache
+```
+
+**Git tracking guide:**
+
+```
+# Track (shared with team)
+.brain/knowledge/projects/
+.brain/knowledge/areas/
+.brain/knowledge/resources/
+.brain/knowledge/qmp/
+.brain/knowledge/decisions/
+.brain/knowledge/skills/
+.brain/memory/project_context.md
+.brain/memory/feedback_rules.md
+CLAUDE.md
+.claude/departments/
+
+# Do not track (machine state + local session logs)
+.brain/state/
+.brain/knowledge/daily/
+.brain/knowledge/weekly/
+.brain/memory/project_context_cache.*
+```
+
+**Promotion to global:**
+
+When you discover a pattern that applies to more than one repo:
+
+```
+1. Document it in .brain/knowledge/qmp/ or resources/
+2. Submit to the global promotion inbox:
+   ~/.claude/knowledge/promotions/inbox.md
+3. The scheduled review loop evaluates it
+4. If approved: python3 ~/.claude/scripts/apply_approved_promotions.py
+5. Pattern is now in ~/.claude/knowledge/ and available to all your repos
+```
+
+---
+
+## Skills
+
+Skills are discovered automatically — you do not configure them per repo.
+
+On every session start, the `skill-gap-detector` evaluator reads your project's
+file extensions and package dependencies, scores every available skill against
+those signals, and adds good matches to `.brain/state/skills.json` recommended
+list. You approve, and the skill becomes active.
+
+On daily cron, the evaluator also fetches the `skill-discovery-sources` pack
+to find new skills from external registries and stack-specific references.
+
+**To see what skills are active or recommended:**
+```bash
+cat .brain/state/skills.json
+```
+
+**To add a new skill globally (personal, not community):**
+```bash
+# Create the skill
+mkdir ~/.claude/skills/my-skill
+# Write SKILL.md with ## Trigger Signals section
+# The evaluator will auto-detect and recommend it for matching repos
+```
+
+**To share a skill with your team:** see [`community/skills/SHARING.md`](community/skills/SHARING.md)
+
+**To contribute a skill to the community:** see [`community/skills/README.md`](community/skills/README.md)
+
+---
+
+## Common operations
+
+| Goal | Command |
+|------|---------|
+| Check repo activation state | `python3 ~/.claude/scripts/activate_repo.py --project-dir . --check-only` |
+| See current depth + trust | `cat .brain/state/autonomy-depth.json` |
+| See active/recommended skills | `cat .brain/state/skills.json` |
+| See pending approvals | `cat .brain/state/approval-state.json` |
+| See dept agreement state | `cat .brain/state/department-agreement.json` |
+| Promote a pattern to global | Add entry to `~/.claude/knowledge/promotions/inbox.md` |
+| Apply approved promotions | `python3 ~/.claude/scripts/apply_approved_promotions.py` |
+| Run watchdog manually | `python3 ~/.claude/scripts/runtime_watchdog.py` |
+
+---
+
+## What to do first after activation
+
+1. Edit `.brain/memory/project_context.md` — confirm the goal the runtime inferred
+2. Edit `.brain/memory/feedback_rules.md` — tell the AI how you want it to behave
+3. Open the repo in Claude Code or Codex — session-start hook fires, skills are scored
+4. Approve or reject the first skill recommendations in `.brain/state/skills.json`
+5. Watch the first department cycle run — check `.brain/knowledge/daily/` for the log
+
+That is the full loop. Everything else is the same pattern at larger scale.

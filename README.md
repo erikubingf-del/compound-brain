@@ -104,28 +104,39 @@ knowledge seeds, or runtime defaults.
 ## Quick start
 
 ```bash
-git clone https://github.com/your-username/compound-brain
+git clone https://github.com/erikubingf-del/compound-brain
 cd compound-brain
 bash install.sh
 ```
 
-Read-only preview for a repo:
+Then activate any repo you own:
 
 ```bash
+# Step 1 — preview (read-only, nothing written)
 python3 ~/.claude/scripts/activate_repo.py --project-dir /path/to/repo --check-only
-```
+# Prints: detected stack, recommended goal, suggested departments
+# You see this, nothing changes on disk
 
-Prepare static project memory:
-
-```bash
+# Step 2 — prepare (writes .brain/ + CLAUDE.md, no autonomy yet)
 python3 ~/.claude/scripts/prepare_brain.py /path/to/repo
-```
+# Creates .brain/memory/, .brain/knowledge/, CLAUDE.md, .codex/AGENTS.md
+# Safe to commit to git
 
-Activate full repo autonomy:
-
-```bash
+# Step 3 — activate (adds .claude/, departments, hooks, autonomy-depth state)
 python3 ~/.claude/scripts/activate_repo.py --project-dir /path/to/repo
+# Confirms goal and departments with you before writing
+# After this: open the repo in Claude Code or Codex and the runtime is live
+
+# Step 4 — check status any time
+python3 ~/.claude/scripts/activate_repo.py --project-dir /path/to/repo --check-only
+# Shows: current depth, trust score, active skills, pending approvals
 ```
+
+See [`examples/activate-repo-demo.md`](examples/activate-repo-demo.md) for a
+walkthrough with expected output at each step.
+
+For a deeper explanation of what departments, autonomy-depth, and skills do
+once activated, see [`GETTING-STARTED.md`](GETTING-STARTED.md).
 
 ## What activation creates
 
@@ -343,7 +354,37 @@ Implemented in the current MVP branch:
 - self-hosting Ralph auto-routing for eligible `compound-brain` cron lanes
 - managed Codex bootstrap and shared nightly review wrapper
 
+## Feature status
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Lifecycle (preview → prepare → activate) | Stable | Full CLI workflow |
+| Global brain (`~/.claude/`) | Stable | PARA, QMP, skills, decisions |
+| Repo preview cache | Stable | Read-only, no disk writes |
+| Static brain preparation | Stable | `.brain/` + `CLAUDE.md` |
+| Activation + approval gates | Stable | Goal/dept confirmation before writing |
+| Department runtime | MVP | Bounded queue handling; works, not rich |
+| Autonomy-depth governor | Stable | Auto-raise/lower with trust scoring |
+| Fixed-evaluator autoresearch | Stable | Approval-gated, keep/discard |
+| Skill discovery + materialization | Stable | Auto-detects by stack signals |
+| Generic skill-gap-detector | Stable | Session-start + cron, any repo type |
+| Skill-discovery-sources pack | Stable | Registries + stack-conditional refs |
+| Heartbeat + watchdog | Stable | Retry backoff, missed-heartbeat alerts |
+| Promotion inbox + review | Stable | Repo → global review → approved apply |
+| Ralph auto-routing | Stable | Self-hosting (`compound-brain`) only |
+| Codex bootstrap | Stable | Shared control plane via same files |
+| Self-hosting evaluator | Stable | Locked contract + scorecard |
+| Community skill examples | Growing | 1 example (ui-master); more welcome |
+| Deeper department execution | Planned | Richer action logic per dept cycle |
+| Worktree-isolated mutations | Planned | Pattern described; no code yet |
+| Full Codex execution parity | Partial | Bootstrap works; deep loops TBD |
+| Real-world case studies | Wanted | See `community/case-studies/TEMPLATE.md` |
+
+The system is safe to use today at depths 2–3 for any activated repo.
+Depths 4–5 (evaluator-backed experiments, high autonomy) require autoresearch
+enablement and a validated evaluator contract.
+
 Still evolving:
-- deeper execution logic inside department cycles
+- richer execution logic inside department cycles
 - worktree-isolated experiment mutations beyond bounded evaluator runs
 - richer promotion authoring from departments into global QMP/skills/decisions

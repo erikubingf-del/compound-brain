@@ -49,17 +49,13 @@ Out of scope for v1:
 - `.brain/` was scaffolded on 2026-03-21 for this repo and now holds project
   planning state
 - Approved design documents live in `docs/plans/2026-03-21-activate-repo-*.md`
-- Advanced autonomy design and implementation plan now define the next runtime
-  tranche on branch `codex/activate-repo-mvp`
-- The branch now implements preview caching, static brain preparation, activation
-  approvals, department state, bounded department cycles, evaluator-backed
-  autoresearch execution, local skill promotion, global promotion inbox review
-  and approved application, self-hosting evaluator surfaces, and scorecard
-  automation
-- The current worktree tranche adds a managed global Codex bootstrap through
-  `~/.codex/AGENTS.md` plus a scheduled promotion-review runner for the global
-  inbox, bringing Claude/Codex runtime alignment and cross-project review loops
-  closer to the intended model
+- All MVP features are merged to main: preview caching, static brain preparation,
+  activation approvals, department state, bounded department cycles,
+  evaluator-backed autoresearch execution, local skill promotion, global
+  promotion inbox review and approved application, self-hosting evaluator
+  surfaces, scorecard automation, managed Codex bootstrap, Ralph auto-routing
+- Community contribution lanes seeded with first exemplar skill (ui-master)
+  and generic skill-gap-detector evaluator and skill-discovery-sources pack
 - Activated repos now have a shared runtime event engine for session start,
   stop, and cron autoimprovement: audits, intelligence briefs, ranked actions,
   department cycles, and autoresearch can refresh automatically through hooks
@@ -153,6 +149,6 @@ Out of scope for v1:
 - Decide whether to merge `codex/activate-repo-mvp` or keep iterating in branch
 
 ## Links
-- Repo: /Users/erikfigueiredo/Documents/GitHub/compound-brain
+- Repo: /Users/erikfigueiredo/compound-brain
 - Design: docs/plans/2026-03-21-activate-repo-design.md
 - Plan: docs/plans/2026-03-21-activate-repo.md
