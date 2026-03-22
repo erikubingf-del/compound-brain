@@ -12,6 +12,8 @@ SCRIPTS_DIR="${BRAIN_DIR}/scripts"
 LIB_DIR="${SCRIPTS_DIR}/lib"
 REGISTRY_DIR="${BRAIN_DIR}/registry"
 POLICY_DIR="${BRAIN_DIR}/policy"
+AGENTS_DIR="${BRAIN_DIR}/agents"
+BRAIN_TEMPLATE_INSTALL_DIR="${BRAIN_DIR}/brain-template"
 TEMPLATES_DIR="${BRAIN_DIR}/templates/project_claude"
 CODEX_TEMPLATES_DIR="${BRAIN_DIR}/templates/project_codex"
 SETTINGS_FILE="${BRAIN_DIR}/settings.json"
@@ -96,6 +98,8 @@ for dir in \
   "$KNOWLEDGE_DIR/promotions" \
   "$REGISTRY_DIR" \
   "$POLICY_DIR" \
+  "$AGENTS_DIR" \
+  "$BRAIN_TEMPLATE_INSTALL_DIR" \
   "$SCRIPTS_DIR" \
   "$LIB_DIR" \
   "$TEMPLATES_DIR/hooks" \
@@ -170,6 +174,21 @@ for template_file in "${REPO_DIR}/templates/project_codex/"*.md; do
   run "mkdir -p \"$(dirname "${CODEX_TEMPLATES_DIR}/${rel_path}")\""
   run "cp \"$template_file\" \"${CODEX_TEMPLATES_DIR}/${rel_path}\""
   ok "Installed Codex template: $rel_path"
+done
+
+while IFS= read -r brain_file; do
+  [[ -f "$brain_file" ]] || continue
+  rel_path="${brain_file#${REPO_DIR}/brain-template/}"
+  run "mkdir -p \"$(dirname "${BRAIN_TEMPLATE_INSTALL_DIR}/${rel_path}")\""
+  run "cp \"$brain_file\" \"${BRAIN_TEMPLATE_INSTALL_DIR}/${rel_path}\""
+  ok "Installed brain template: ${rel_path}"
+done < <(find "${REPO_DIR}/brain-template" -type f | sort)
+
+for agent_file in "${REPO_DIR}/agents/"*.md; do
+  [[ -f "$agent_file" ]] || continue
+  fname=$(basename "$agent_file")
+  run "cp \"$agent_file\" \"${AGENTS_DIR}/${fname}\""
+  ok "Installed agent program: ${fname}"
 done
 
 # ─── Step 3: Seed knowledge base ─────────────────────────────────────────────
