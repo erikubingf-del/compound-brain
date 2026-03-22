@@ -18,6 +18,7 @@ try:
         load_repo_depth_state,
         required_context_files,
     )
+    from scripts.lib.department_arbitration import arbitrate_departments
     from scripts.lib.runtime_heartbeat import RuntimeHeartbeatStore
     from scripts.lib.runtime_governor import (
         allowed_actions_for_event,
@@ -40,6 +41,7 @@ except ModuleNotFoundError:
         load_repo_depth_state,
         required_context_files,
     )
+    from lib.department_arbitration import arbitrate_departments
     from lib.runtime_heartbeat import RuntimeHeartbeatStore
     from lib.runtime_governor import (
         allowed_actions_for_event,
@@ -174,6 +176,15 @@ def run_project_runtime_event(project_dir: Path, event: str) -> dict[str, Any]:
                 project_state = ProjectState.from_brain(project_dir)
                 lead_department = choose_lead_department(enabled_departments, ranking["top_action_category"], event)
                 supporting_departments = choose_supporting_departments(enabled_departments, lead_department)
+                agreement = arbitrate_departments(
+                    repo=project_dir,
+                    event=event,
+                    current_depth=int(depth_state["current_depth"]),
+                    lead_department=lead_department,
+                    supporting_departments=supporting_departments,
+                    top_action_category=ranking["top_action_category"],
+                    approval_state=approval_state,
+                )
                 required_files = required_context_files(
                     project_dir,
                     event=event,
@@ -197,6 +208,7 @@ def run_project_runtime_event(project_dir: Path, event: str) -> dict[str, Any]:
                     heartbeat_record=store.load(project_dir),
                     policy=policy,
                     validation_success=project_state.test_pass_rate,
+                    agreement=agreement,
                 )
                 depth_state = apply_governor_to_depth_state(
                     project_dir,
@@ -229,9 +241,13 @@ def run_project_runtime_event(project_dir: Path, event: str) -> dict[str, Any]:
                         heartbeat_record=store.load(project_dir),
                         policy=policy,
                         validation_success=project_state.test_pass_rate,
+                        agreement=agreement,
                     )
 
                 allowed_actions, blocked_actions = allowed_actions_for_event(event, int(depth_state["current_depth"]))
+                if agreement["result"] in {"object", "escalate"}:
+                    allowed_actions = [item for item in allowed_actions if item != "bounded-edit"]
+                    blocked_actions = list(dict.fromkeys([*blocked_actions, "bounded-edit"]))
                 build_runtime_packet(
                     repo=project_dir,
                     event=event,
@@ -246,6 +262,7 @@ def run_project_runtime_event(project_dir: Path, event: str) -> dict[str, Any]:
                     allowed_actions=allowed_actions,
                     blocked_actions=blocked_actions,
                     do_not_repeat=[f"Do not repeat {item}" for item in approval_state.get("pending", [])][:2],
+                    agreement=agreement,
                 )
 
                 if not context_snapshot["context_ok"]:
@@ -271,6 +288,7 @@ def run_project_runtime_event(project_dir: Path, event: str) -> dict[str, Any]:
                     "goal": ranking["goal"],
                     "current_depth": depth_state["current_depth"],
                     "lead_department": lead_department,
+                    "department_agreement": agreement["result"],
                     "skill_active_count": len(skills["active"]),
                     "skill_missing_count": len(skills["missing"]),
                     "skill_materialized_count": len(skills["materialized"]),
@@ -278,14 +296,19 @@ def run_project_runtime_event(project_dir: Path, event: str) -> dict[str, Any]:
                 }
 
                 if event == "cron":
-                    summary, rc = run_project_cron(
-                        project_dir,
-                        dry_run=False,
-                        refresh_skills=False,
-                        current_depth=int(depth_state["current_depth"]),
-                        lead_department=lead_department,
-                        supporting_departments=supporting_departments,
-                    )
+                    if agreement["result"] in {"object", "escalate"}:
+                        summary = f"planning-only arbitration={agreement['result']}"
+                        rc = 0
+                    else:
+                        summary, rc = run_project_cron(
+                            project_dir,
+                            dry_run=False,
+                            refresh_skills=False,
+                            current_depth=int(depth_state["current_depth"]),
+                            lead_department=lead_department,
+                            supporting_departments=supporting_departments,
+                        )
+                        summary = f"{summary}, arbitration={agreement['result']}"
                     runtime["cron_summary"] = summary
                     runtime["cron_rc"] = rc
                     if rc != 0:

@@ -304,6 +304,20 @@ def initialize_runtime_state(repo: Path, depth_state: dict[str, Any]) -> None:
             },
         ),
     )
+    save_json(
+        state_dir / "department-agreement.json",
+        load_json(
+            state_dir / "department-agreement.json",
+            {
+                "version": 1,
+                "generated_at": now_utc(),
+                "result": "agree",
+                "positions": {},
+                "constraints": [],
+                "objections": [],
+            },
+        ),
+    )
 
 
 def required_context_files(
@@ -345,6 +359,10 @@ def apply_governor_to_depth_state(
     current_depth = int(depth_state.get("current_depth", 2))
     trust_score = int(governor.get("trust_score", 0))
     pending = list(approval_state.get("pending", []))
+    agreement_result = str(governor.get("agreement", {}).get("result", "agree"))
+    history = dict(governor.get("history", {}))
+    healthy_streak = int(history.get("healthy_run_streak", depth_state.get("consecutive_healthy_cycles", 0)))
+    trend = str(history.get("trend", "stable"))
     blocked_by: list[str] = []
     reason = "steady"
 
@@ -352,20 +370,23 @@ def apply_governor_to_depth_state(
         current_depth = 2
         blocked_by.append("context-snapshot")
         reason = "context-blocked"
-        depth_state["consecutive_healthy_cycles"] = 0
+        healthy_streak = 0
     elif pending and current_depth > 2:
         current_depth = 2
         blocked_by.extend(str(item) for item in pending)
         reason = "strategic-approval-pending"
-        depth_state["consecutive_healthy_cycles"] = 0
+        healthy_streak = 0
     else:
         stay_floor = int(policy.get("stay_floors", {}).get(str(current_depth), 0))
-        if current_depth > 2 and trust_score < stay_floor and policy.get("auto_lower_enabled", True):
+        severe_disagreement = agreement_result in {"object", "escalate"}
+        if severe_disagreement:
+            blocked_by.append(f"department-agreement:{agreement_result}")
+        if current_depth > 2 and policy.get("auto_lower_enabled", True) and (
+            trust_score < stay_floor or (severe_disagreement and trend == "falling")
+        ):
             current_depth = max(2, current_depth - 1)
-            reason = "trust-below-floor"
-            depth_state["consecutive_healthy_cycles"] = 0
-        else:
-            depth_state["consecutive_healthy_cycles"] = int(depth_state.get("consecutive_healthy_cycles", 0)) + 1
+            reason = "trust-below-floor" if trust_score < stay_floor else "department-disagreement"
+            healthy_streak = 0
 
     allowed_max = min(
         int(depth_state.get("allowed_max_depth", policy.get("user_max_depth", 5))),
@@ -378,15 +399,28 @@ def apply_governor_to_depth_state(
     confidence = 0.6
     next_depth = min(current_depth + 1, allowed_max)
     raise_threshold = int(policy.get("raise_thresholds", {}).get(str(next_depth), 999))
-    enough_cycles = int(depth_state.get("consecutive_healthy_cycles", 0)) >= raise_cycle_requirement(next_depth)
-    if next_depth > current_depth and trust_score >= raise_threshold and not pending:
+    enough_cycles = healthy_streak >= raise_cycle_requirement(next_depth)
+    if (
+        next_depth > current_depth
+        and trust_score >= raise_threshold
+        and not pending
+        and agreement_result not in {"object", "escalate"}
+        and trend != "falling"
+    ):
         recommended_direction = "raise"
         recommended_next_depth = next_depth
         confidence = min(0.95, 0.5 + (trust_score / 200))
         if policy.get("auto_raise_enabled", True) and enough_cycles:
             current_depth = next_depth
             reason = "auto-raise"
-    elif blocked_by or (current_depth > 2 and trust_score < int(policy.get("stay_floors", {}).get(str(current_depth), 0))):
+    elif blocked_by or (
+        current_depth > 2
+        and (
+            trust_score < int(policy.get("stay_floors", {}).get(str(current_depth), 0))
+            or agreement_result in {"object", "escalate"}
+            or trend == "falling"
+        )
+    ):
         recommended_direction = "lower"
         recommended_next_depth = max(2, current_depth - 1)
         confidence = 0.8
@@ -398,6 +432,7 @@ def apply_governor_to_depth_state(
     depth_state["allowed_max_depth"] = allowed_max
     depth_state["user_max_depth"] = int(policy.get("user_max_depth", 5))
     depth_state["blocked_by"] = blocked_by
+    depth_state["consecutive_healthy_cycles"] = healthy_streak
     depth_state["last_depth_change_at"] = now_utc()
     depth_state["last_depth_change_reason"] = reason
     return save_repo_depth_state(repo, depth_state)

@@ -78,6 +78,7 @@ Runtime governance:
 - every event writes `.brain/state/context-snapshot.json`
 - every event writes `.brain/state/runtime-packet.json`
 - every event refreshes `.brain/state/runtime-governor.json`
+- every event refreshes `.brain/state/department-agreement.json`
 - repo depth lives in `.brain/state/autonomy-depth.json`
 - department source packs live in `.brain/knowledge/departments/<department>-sources.md`
 - department skill-shopping state lives in `.brain/state/departments/<department>-shopping.json`
@@ -92,6 +93,7 @@ Depth behavior:
 - depth `2` keeps cron in planning-only mode
 - depth `3` allows bounded department execution
 - depth `4+` allows evaluator-backed autoresearch
+- department objections can force cron back into planning-only mode even at higher depths
 - depth lowers automatically when approvals, trust, or context compliance fail
 
 Operational trust layer:
@@ -99,6 +101,13 @@ Operational trust layer:
 - lockfiles live in `~/.claude/registry/runtime-locks/`
 - cron failures enter backoff instead of silently flapping
 - watchdog reports missed or missing heartbeats to `~/.claude/knowledge/resources/runtime-heartbeats.md`
+- runtime-governor history tracks trust trend and healthy streaks for depth evolution
+
+Cross-department arbitration:
+- one lead department owns the action lane
+- supporting departments can agree, agree with constraints, or object
+- operations objections gate infra/runtime work
+- architecture objections gate control-plane and high-risk structural work
 
 ## Approval model
 

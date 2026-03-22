@@ -163,6 +163,7 @@ Per-repo runtime state lives in:
 - `.brain/state/runtime-governor.json`
 - `.brain/state/runtime-packet.json`
 - `.brain/state/context-snapshot.json`
+- `.brain/state/department-agreement.json`
 - `.brain/state/department-health.json`
 
 Depth ladder:
@@ -179,9 +180,10 @@ The runtime now:
 1. loads user policy and repo depth
 2. pre-hydrates deterministic repo state like skills and ranked actions
 3. builds a fail-closed context snapshot from required files
-4. computes a trust score from approvals, heartbeat health, skill coverage, department health, and validation signals
-5. writes a compact runtime packet for Claude and Codex
-6. lowers or recommends depth changes when evidence requires it
+4. computes cross-department agreement before execution lanes are opened
+5. computes a trust score from approvals, heartbeat health, skill coverage, department health, validation signals, and agreement state
+6. writes a compact runtime packet for Claude and Codex
+7. raises, lowers, or freezes depth from trust history, healthy streaks, and department objections
 
 This keeps repo autonomy adaptive per user and per repo without letting the
 runtime exceed the user’s declared ceiling.
@@ -255,7 +257,7 @@ Implemented in the current MVP branch:
 - shared project runtime event engine for session start, stop, and cron autoimprovement
 - heartbeat ledger, lockfiles, retry backoff, and watchdog reporting for activated repos
 - repo-aware skill matching across local, global, and approved external skill sources
-- autonomy-depth policy, fail-closed context snapshots, runtime packets, and trust-governed depth state
+- autonomy-depth policy, fail-closed context snapshots, runtime packets, cross-department arbitration, and trust-governed depth state with history
 - evaluator-backed autoresearch execution with keep/discard results
 - local skill promotion, global promotion inbox, scheduled review, and approved
   promotion application into canonical global knowledge

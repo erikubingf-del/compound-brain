@@ -120,6 +120,44 @@ def evaluator_score(repo: Path) -> float:
     return keeps / total
 
 
+def load_previous_governor(repo: Path) -> dict[str, Any]:
+    path = repo / ".brain" / "state" / "runtime-governor.json"
+    if not path.exists():
+        return {}
+    return json.loads(path.read_text())
+
+
+def compute_trend(scores: list[int]) -> str:
+    if len(scores) < 2:
+        return "stable"
+    delta = scores[-1] - scores[-2]
+    if delta >= 3:
+        return "improving"
+    if delta <= -3:
+        return "falling"
+    return "stable"
+
+
+def compute_history(
+    previous: dict[str, Any],
+    *,
+    trust_score: int,
+    current_depth: int,
+    healthy_cycle: bool,
+) -> dict[str, Any]:
+    history = dict(previous.get("history", {}))
+    recent_scores = [int(item) for item in history.get("recent_trust_scores", [])][-5:]
+    recent_scores.append(trust_score)
+    streak = int(history.get("healthy_run_streak", 0))
+    streak = streak + 1 if healthy_cycle else 0
+    return {
+        "recent_trust_scores": recent_scores,
+        "healthy_run_streak": streak,
+        "trend": compute_trend(recent_scores),
+        "last_depth_observed": current_depth,
+    }
+
+
 def build_runtime_governor(
     repo: Path,
     event: str,
@@ -130,6 +168,7 @@ def build_runtime_governor(
     heartbeat_record: dict[str, Any],
     policy: dict[str, Any],
     validation_success: float,
+    agreement: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     context_compliance = 1.0 if context_snapshot.get("context_ok") else 0.0
     pending = list(approval_state.get("pending", []))
@@ -147,6 +186,9 @@ def build_runtime_governor(
         15,
     )
     drift_penalty = 5 if pending and current_depth > 2 else 0
+    agreement_result = str((agreement or {}).get("result", "agree"))
+    if agreement_result in {"object", "escalate"}:
+        drift_penalty += 7
     protected_surface_penalty = 0
     context_skip_penalty = 25 if not context_snapshot.get("context_ok") else 0
 
@@ -167,6 +209,22 @@ def build_runtime_governor(
         )
     )
     trust_score = max(0, min(trust_score, 100))
+    stay_floor = int(policy.get("stay_floors", {}).get(str(current_depth), 0))
+    healthy_cycle = (
+        context_snapshot.get("context_ok")
+        and trust_score >= stay_floor
+        and not pending
+        and agreement_result not in {"object", "escalate"}
+        and repeated_failure_penalty == 0
+        and context_skip_penalty == 0
+    )
+    previous = load_previous_governor(repo)
+    history = compute_history(
+        previous,
+        trust_score=trust_score,
+        current_depth=current_depth,
+        healthy_cycle=healthy_cycle,
+    )
 
     readiness = {
         "can_raise_to_3": trust_score >= int(policy.get("raise_thresholds", {}).get("3", 60)),
@@ -184,6 +242,8 @@ def build_runtime_governor(
         reasons.append("skill coverage incomplete")
     if heartbeat_reliability >= 0.85:
         reasons.append("heartbeat healthy")
+    if agreement_result in {"agree-with-constraints", "escalate"}:
+        reasons.append(f"department agreement={agreement_result}")
 
     payload = {
         "version": 1,
@@ -209,6 +269,8 @@ def build_runtime_governor(
         "readiness": readiness,
         "reasons": reasons,
         "department_health": department_summary,
+        "history": history,
+        "agreement": agreement or {"result": "agree", "positions": {}, "constraints": [], "objections": []},
     }
     state_path = repo / ".brain" / "state" / "runtime-governor.json"
     state_path.parent.mkdir(parents=True, exist_ok=True)
@@ -298,6 +360,7 @@ def build_runtime_packet(
     allowed_actions: list[str],
     blocked_actions: list[str],
     do_not_repeat: list[str],
+    agreement: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     payload = {
         "version": 1,
@@ -318,6 +381,12 @@ def build_runtime_packet(
         "do_not_repeat": do_not_repeat,
         "allowed_actions": allowed_actions,
         "blocked_actions": blocked_actions,
+        "department_agreement": {
+            "result": (agreement or {}).get("result", "agree"),
+            "positions": (agreement or {}).get("positions", {}),
+            "constraints": list((agreement or {}).get("constraints", [])),
+            "objections": list((agreement or {}).get("objections", [])),
+        },
         "required_context_files": list(context_snapshot.get("required_context_files", [])),
         "loaded_context_files": list(context_snapshot.get("loaded_context_files", [])),
         "context_ok": bool(context_snapshot.get("context_ok", False)),

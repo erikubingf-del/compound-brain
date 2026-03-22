@@ -50,6 +50,7 @@ class RuntimeGovernorTests(unittest.TestCase):
     def test_build_runtime_governor_scores_repo_and_flags_raise_readiness(self) -> None:
         with TemporaryDirectory() as tmp:
             repo = Path(tmp)
+            (repo / ".brain" / "state").mkdir(parents=True)
             (repo / ".brain" / "state" / "departments").mkdir(parents=True)
             (repo / ".brain" / "state" / "departments" / "engineering.json").write_text(
                 json.dumps({"status": "ready"}) + "\n"
@@ -68,6 +69,36 @@ class RuntimeGovernorTests(unittest.TestCase):
 
             self.assertGreaterEqual(governor["trust_score"], 60)
             self.assertTrue(governor["readiness"]["can_raise_to_3"])
+
+    def test_build_runtime_governor_tracks_history_and_trend(self) -> None:
+        with TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            (repo / ".brain" / "state").mkdir(parents=True)
+            (repo / ".brain" / "state" / "runtime-governor.json").write_text(
+                json.dumps(
+                    {
+                        "history": {
+                            "recent_trust_scores": [61, 68],
+                            "healthy_run_streak": 2,
+                        }
+                    }
+                )
+                + "\n"
+            )
+            governor = build_runtime_governor(
+                repo=repo,
+                event="cron",
+                current_depth=2,
+                approval_state={"state": "approved", "pending": []},
+                context_snapshot={"context_ok": True},
+                skill_state={"active": [{"title": "ui-master"}], "missing": []},
+                heartbeat_record={"events": {"cron": {"status": "ok"}}},
+                policy={"raise_thresholds": {"3": 60}, "stay_floors": {"2": 25}},
+                validation_success=0.95,
+            )
+
+            self.assertEqual(governor["history"]["healthy_run_streak"], 3)
+            self.assertEqual(governor["history"]["trend"], "improving")
 
     def test_build_runtime_packet_carries_loaded_context_and_action_bounds(self) -> None:
         with TemporaryDirectory() as tmp:
