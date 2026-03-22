@@ -1,0 +1,10 @@
+# Add to your project's .gitignore to keep brain files local:
+# .brain/memory/*.md     — sensitive session state
+# .brain/knowledge/daily/ — raw operational logs
+#
+# Keep these tracked (shared team intelligence):
+# .brain/knowledge/projects/
+# .brain/knowledge/decisions/
+# .brain/knowledge/resources/
+# .brain/knowledge/qmp/
+# .brain/knowledge/skills/
