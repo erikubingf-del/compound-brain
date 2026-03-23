@@ -100,6 +100,10 @@ Out of scope for v1:
   `~/.codex/automations/` so recurring runtime heartbeat and skill-radar refresh
   happen through Codex’s native background task surface while still dispatching
   into the same shared `~/.claude` runtime scripts
+- The Claude-side master operating instructions in `core/BRAIN.md` and the live
+  `~/.claude/BRAIN.md` were rewritten to match the newer runtime model in
+  detail: one runtime, hook/automation parity boundaries, operator brief
+  reading order, global skill-radar surfaces, and approval/depth/trust gates
 - The self-hosting runtime now adds a gated Ralph lane for `compound-brain`:
   eligible cron work can generate a one-story PRD, run one Ralph iteration,
   and record `.brain/state/ralph-state.json` instead of always using the
@@ -175,6 +179,8 @@ Out of scope for v1:
 - Benchmark the new global skill radar and Codex runtime bridge on real repos
   so proposal quality and freshness can be tuned from evidence instead of
   design instinct
+- Keep the short project-local `CLAUDE.md` intentionally concise while treating
+  `core/BRAIN.md` as the full Claude/Codex runtime contract
 - Seed the new community lanes with exemplar contributions for `frontend`,
   `backend`, and `finance`
 - Open the first benchmark and case study issues to create visible community

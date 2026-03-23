@@ -494,3 +494,31 @@ automation regression coverage.
 **Rule established:** Codex session parity uses the runtime bridge; Codex
 recurring parity uses managed Automations. Both must dispatch into the same
 shared `~/.claude` runtime rather than duplicating orchestration logic.
+
+---
+
+## DEC-019 — Claude master instructions must describe the live runtime with the same precision as the public docs
+**Date:** 2026-03-23
+**Priority:** P2
+**Context:** Public docs and Codex-side instructions had become more precise
+than the Claude-side `BRAIN.md`, which still described a more generic runtime
+and left newer operator surfaces implicit.
+**Options Considered:**
+- Leave `BRAIN.md` high-level and rely on README/architecture docs for detail
+- Keep adding small notes to `BRAIN.md`
+- Rewrite `BRAIN.md` to match the live runtime contract directly
+**Reasoning:** Claude hooks are a first-class wake path in this system, so the
+Claude-facing master instructions must be as explicit as the Codex side.
+Otherwise the public promise and the actual operational preload for Claude can
+drift. A rewrite is cleaner than incremental patching because the live runtime
+now has a clear shape: one runtime, compact state files, operator brief,
+department lanes, skill radar, and trust/depth/approval gates.
+**Expected Outcome:** `core/BRAIN.md` and the installed `~/.claude/BRAIN.md`
+state the same runtime contract as README/ARCHITECTURE: exact wake model,
+which files to read first, parity boundaries between Claude and Codex, and how
+skill intelligence and autonomy depth actually work.
+**Actual Outcome:** Implemented through a full rewrite of both source and live
+Claude master instruction files.
+**Rule established:** The Claude-side master instructions must stay aligned
+with the live runtime contract and should be rewritten when the runtime shape
+changes materially, not left as a generic summary.
