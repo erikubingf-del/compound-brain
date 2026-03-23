@@ -9,8 +9,10 @@ from pathlib import Path
 
 try:
     from scripts.lib.codex_bootstrap import apply_managed_codex_block
+    from scripts.lib.codex_automations import ensure_managed_automations
 except ModuleNotFoundError:
     from lib.codex_bootstrap import apply_managed_codex_block
+    from lib.codex_automations import ensure_managed_automations
 
 
 def codex_home_dir() -> Path:
@@ -27,12 +29,30 @@ def claude_home_dir() -> Path:
     return Path.home() / ".claude"
 
 
+def infer_repo_root(cli_repo_root: str | None) -> Path:
+    if cli_repo_root:
+        return Path(cli_repo_root).expanduser().resolve()
+    override = os.environ.get("COMPOUND_BRAIN_REPO_ROOT")
+    if override:
+        return Path(override).expanduser().resolve()
+    return Path.cwd().resolve()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Bootstrap Codex with the compound-brain managed runtime block.")
-    parser.parse_args()
+    parser.add_argument("--repo-root", help="Path to the compound-brain repo checkout used for Codex automations")
+    args = parser.parse_args()
     agents_path = codex_home_dir() / "AGENTS.md"
     apply_managed_codex_block(agents_path, claude_home_dir())
-    print(f"compound-brain Codex runtime ready at {agents_path}")
+    automations = ensure_managed_automations(
+        codex_home=codex_home_dir(),
+        claude_home=claude_home_dir(),
+        repo_root=infer_repo_root(args.repo_root),
+    )
+    print(
+        "compound-brain Codex runtime ready at "
+        + f"{agents_path} with {len(automations)} managed automation(s)"
+    )
     return 0
 
 

@@ -21,6 +21,7 @@ def managed_block(claude_home: Path) -> str:
             "- If the repo is activated, run `python3 ~/.claude/scripts/codex_runtime_bridge.py --project-dir . --json-output`.",
             "- If the repo is prepared or activated, read `CLAUDE.md`, `.brain/`, and `.claude/` when present.",
             "- After the bridge runs, read `.brain/state/operator-recommendation.json`, `.brain/state/runtime-packet.json`, `.brain/state/skills.json`, and department shopping files when relevant.",
+            "- Let managed Codex automations under `~/.codex/automations/` provide recurring heartbeats instead of inventing separate cron logic.",
             "- Do not create a parallel repo memory or runtime outside `.brain/` and `.claude/`.",
             "",
             "Shared runtime surfaces:",

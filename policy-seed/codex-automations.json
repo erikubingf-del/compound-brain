@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "automations": [
+    {
+      "id": "compound-brain-runtime-heartbeat",
+      "name": "Compound Runtime Heartbeat",
+      "status": "ACTIVE",
+      "rrule": "RRULE:FREQ=HOURLY;INTERVAL=6",
+      "execution_environment": "local",
+      "prompt": "Run the shared compound-brain runtime heartbeat. Execute `python3 ~/.claude/scripts/project_runtime_event.py --event cron --all-activated --json-output`, review blocked or failed repos, and summarize only actionable findings for the inbox."
+    },
+    {
+      "id": "compound-brain-skill-radar",
+      "name": "Compound Skill Radar",
+      "status": "ACTIVE",
+      "rrule": "RRULE:FREQ=HOURLY;INTERVAL=12",
+      "execution_environment": "local",
+      "prompt": "Run the shared compound-brain skill radar refresh. Execute `python3 ~/.claude/scripts/skill_radar_refresh.py --json-output`, inspect new GitHub-derived candidates and project-tip signals, and summarize which skill proposals look worth reviewing next."
+    }
+  ]
+}

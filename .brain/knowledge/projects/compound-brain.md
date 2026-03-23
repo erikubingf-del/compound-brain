@@ -96,6 +96,10 @@ Out of scope for v1:
   `project-tip-catalog.json`, and `skill-radar-latest.md` from scheduled
   GitHub and repo-tip sweeps so activated repos can propose higher-fit skills
   without doing direct GitHub search on every session wake
+- The newest Codex-native parity pass adds managed Codex Automations under
+  `~/.codex/automations/` so recurring runtime heartbeat and skill-radar refresh
+  happen through Codex’s native background task surface while still dispatching
+  into the same shared `~/.claude` runtime scripts
 - The self-hosting runtime now adds a gated Ralph lane for `compound-brain`:
   eligible cron work can generate a one-story PRD, run one Ralph iteration,
   and record `.brain/state/ralph-state.json` instead of always using the
@@ -132,6 +136,7 @@ Out of scope for v1:
   runtime mutation
 - Global GitHub skill radar plus project-tip catalog feeding repo-local skill
   proposals and Codex/Claude runtime packets
+- Codex Automations as the native recurring wake layer over the shared runtime
 
 ## Key Decisions
 - Make the public product an actionable Claude skill run inside a repo

@@ -293,6 +293,10 @@ if [[ ! -f "${POLICY_DIR}/skill-radar-policy.json" ]]; then
   run "cp \"${REPO_DIR}/policy-seed/skill-radar-policy.json\" \"${POLICY_DIR}/skill-radar-policy.json\""
   ok "Seeded policy: skill-radar-policy.json"
 fi
+if [[ ! -f "${POLICY_DIR}/codex-automations.json" ]]; then
+  run "cp \"${REPO_DIR}/policy-seed/codex-automations.json\" \"${POLICY_DIR}/codex-automations.json\""
+  ok "Seeded policy: codex-automations.json"
+fi
 
 # Decision log seed
 if [[ ! -f "${KNOWLEDGE_DIR}/decisions/log.md" ]]; then
@@ -433,7 +437,7 @@ CODEX_BOOTSTRAP_SCRIPT="${SCRIPTS_DIR}/bootstrap_codex_runtime.py"
 if $DRY_RUN; then
   echo "  [dry-run] ${PYTHON_BIN} ${CODEX_BOOTSTRAP_SCRIPT}"
 else
-  "${PYTHON_BIN}" "${CODEX_BOOTSTRAP_SCRIPT}" || warn "Codex bootstrap failed — review ~/.codex/AGENTS.md manually"
+  "${PYTHON_BIN}" "${CODEX_BOOTSTRAP_SCRIPT}" --repo-root "${REPO_DIR}" || warn "Codex bootstrap failed — review ~/.codex/AGENTS.md manually"
 fi
 
 # ─── Step 5: Project registry ────────────────────────────────────────────────

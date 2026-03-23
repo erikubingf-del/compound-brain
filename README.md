@@ -98,6 +98,7 @@ same proposal surface back into repo-local skill shopping.
 - Codex adapter in `.codex/AGENTS.md`
   - reads the same repo control plane as Claude
   - uses `~/.claude/scripts/codex_runtime_bridge.py` to wake the same runtime
+  - uses managed Codex Automations for recurring heartbeats and skill-radar refresh
   - does not create a second repo runtime
 
 ## What activated repos become
@@ -432,6 +433,7 @@ Implemented in the current MVP branch:
 - self-hosting evaluator surfaces plus scorecard automation
 - self-hosting Ralph auto-routing for eligible `compound-brain` cron lanes
 - managed Codex bootstrap, runtime bridge, and shared nightly review wrapper
+- managed Codex automations for runtime heartbeat and skill-radar refresh
 
 ## Feature status
 
@@ -452,10 +454,12 @@ Implemented in the current MVP branch:
 | Promotion inbox + review | Stable | Repo → global review → approved apply |
 | Ralph auto-routing | Stable | Self-hosting (`compound-brain`) only |
 | Codex bootstrap + bridge | Stable | Managed `AGENTS.md` plus runtime freshness gate |
+| Codex automations | Stable | Managed recurring heartbeat + skill-radar tasks |
 | Self-hosting evaluator | Stable | Locked contract + scorecard |
 | Community skill examples | Growing | 1 example (ui-master); more welcome |
 | Worktree-isolated mutations | Stable | Mutation command runs in temporary worktree lanes |
-| Full native Codex hook parity | Partial | Shared runtime works; vendor-native hooks still TBD |
+| Full native Codex recurring parity | Stable | Automations provide the native recurring wake layer |
+| Full vendor-native Codex hook parity | Partial | Session-start still relies on AGENTS + bridge, not a vendor hook API |
 | Real-world case studies | Wanted | See `community/case-studies/TEMPLATE.md` |
 
 The system is safe to use today at depths 2–3 for any activated repo.

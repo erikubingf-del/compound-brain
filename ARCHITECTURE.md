@@ -78,7 +78,9 @@ Codex reads the same surfaces through `.codex/AGENTS.md`. It must not create a
 parallel repo runtime. The managed bootstrap now routes activated repos through
 `~/.claude/scripts/codex_runtime_bridge.py`, which reuses fresh runtime state
 when possible and falls back to the same `session-start` event engine Claude
-uses.
+uses. Recurring Codex parity is handled by managed automation definitions under
+`~/.codex/automations/`, which wake the same shared runtime on schedule instead
+of creating a second scheduler model.
 
 ## Department runtime
 

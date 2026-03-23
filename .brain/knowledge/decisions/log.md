@@ -467,3 +467,30 @@ opportunity surfacing.
 into the shared runtime, and broader external skill intelligence should be
 gathered globally on cron, cached in `~/.claude`, and consumed by repo-local
 skill shopping rather than by ad hoc per-session web searching.
+
+---
+
+## DEC-018 — Codex Automations are the native recurring wake layer for compound-brain
+**Date:** 2026-03-23
+**Priority:** P1
+**Context:** The managed Codex bridge solved session-start parity, but recurring
+Codex behavior still depended on external cron and documentation. The missing
+piece was a native recurring surface that Codex itself supports.
+**Options Considered:**
+- Keep recurring parity entirely in shell cron outside Codex
+- Wait for a future vendor-native hook API
+- Use managed Codex Automations for recurring heartbeat and skill-radar tasks
+**Reasoning:** Codex Automations already provide scheduled background runs with
+workspace targeting. Using them lets compound-brain stay credible: no fake
+hook API, no second scheduler model, and no divergence from the shared runtime.
+Claude keeps hook-based session boundaries; Codex gets native recurring wakeups
+through managed automation definitions that call the same `~/.claude` scripts.
+**Expected Outcome:** Installing compound-brain refreshes `~/.codex/AGENTS.md`
+and also materializes managed automation definitions for runtime heartbeat and
+skill-radar refresh, both scoped to the real compound-brain repo checkout.
+**Actual Outcome:** Implemented through `codex_automations.py`,
+`policy-seed/codex-automations.json`, bootstrap wiring, installer seeding, and
+automation regression coverage.
+**Rule established:** Codex session parity uses the runtime bridge; Codex
+recurring parity uses managed Automations. Both must dispatch into the same
+shared `~/.claude` runtime rather than duplicating orchestration logic.
