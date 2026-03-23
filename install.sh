@@ -160,6 +160,7 @@ SCRIPTS=(
   "activate_repo.py"
   "architecture_radar.py"
   "bootstrap_codex_runtime.py"
+  "codex_runtime_bridge.py"
   "materialize_project_claude.py"
   "nightly_review.sh"
   "prepare_brain.py"
@@ -172,6 +173,7 @@ SCRIPTS=(
   "probability_engine.py"
   "review_promotion_inbox.py"
   "run_project_llm_cron.py"
+  "skill_radar_refresh.py"
   "update_architecture_scorecard.py"
   "github_intelligence.py"
   "setup_brain.sh"
@@ -286,6 +288,10 @@ fi
 if [[ ! -f "${POLICY_DIR}/ralph-policy.json" ]]; then
   run "cp \"${REPO_DIR}/policy-seed/ralph-policy.json\" \"${POLICY_DIR}/ralph-policy.json\""
   ok "Seeded policy: ralph-policy.json"
+fi
+if [[ ! -f "${POLICY_DIR}/skill-radar-policy.json" ]]; then
+  run "cp \"${REPO_DIR}/policy-seed/skill-radar-policy.json\" \"${POLICY_DIR}/skill-radar-policy.json\""
+  ok "Seeded policy: skill-radar-policy.json"
 fi
 
 # Decision log seed
@@ -475,6 +481,9 @@ install_cron "COMPOUND_GLOBAL_SWEEP" \
 
 install_cron "COMPOUND_PROJECT_LLM_CRON" \
   "0 */6 * * * ${PYTHON_BIN} ${SCRIPTS_DIR}/project_runtime_event.py --event cron --all-activated >> /tmp/compound_project_llm_cron.log 2>&1 # COMPOUND_PROJECT_LLM_CRON"
+
+install_cron "COMPOUND_SKILL_RADAR" \
+  "45 */12 * * * ${PYTHON_BIN} ${SCRIPTS_DIR}/skill_radar_refresh.py >> /tmp/compound_skill_radar.log 2>&1 # COMPOUND_SKILL_RADAR"
 
 install_cron "COMPOUND_GITHUB_INTEL" \
   "0 9 * * 0 ${PYTHON_BIN} ${SCRIPTS_DIR}/github_intelligence.py >> /tmp/compound_github_intel.log 2>&1 # COMPOUND_GITHUB_INTEL"

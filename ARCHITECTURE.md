@@ -39,6 +39,7 @@ Responsibilities:
 - activation registry
 - promotion inbox
 - architecture radar
+- skill radar and project-tip catalog
 - shared runtime for Claude and Codex triggers
 
 Mutation rule:
@@ -74,7 +75,10 @@ Activated repos use one canonical local control plane:
 - `.claude/`
 
 Codex reads the same surfaces through `.codex/AGENTS.md`. It must not create a
-parallel repo runtime.
+parallel repo runtime. The managed bootstrap now routes activated repos through
+`~/.claude/scripts/codex_runtime_bridge.py`, which reuses fresh runtime state
+when possible and falls back to the same `session-start` event engine Claude
+uses.
 
 ## Department runtime
 
@@ -192,10 +196,18 @@ Repo skill discovery flow:
 - infer required capabilities from repo stack, docs, tests, departments, and autoresearch state
 - match repo-local skills first
 - match global shared skills second
+- match global skill-radar candidates and project-tip evidence next
 - match approved external skill roots last
 - score candidates with department source-pack context, trust, freshness, and adaptation notes
 - materialize best-fit skills into the repo brain when the match is strong enough
 - keep explicit active, stale, recommended, and missing skill state per repo
+
+Global skill-intelligence flow:
+- `skill_radar_refresh.py` runs on cron in the global plane
+- it searches approved GitHub patterns with star thresholds and department-aware queries
+- it extracts reusable project tips from activated repos
+- it writes `skill-catalog.json`, `project-tip-catalog.json`, and `skill-radar-latest.md`
+- repo runtime wakes consume those cached catalogs during normal skill refresh
 
 Cross-project candidates:
 - `~/.claude/knowledge/promotions/inbox.md`

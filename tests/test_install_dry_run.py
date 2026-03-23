@@ -19,3 +19,5 @@ class InstallDryRunTests(unittest.TestCase):
         self.assertIn("agents/architecture_program.md", result.stdout)
         self.assertIn("verify scripts coverage", result.stdout)
         self.assertIn("verify brain-template coverage", result.stdout)
+        self.assertIn("codex_runtime_bridge.py", result.stdout)
+        self.assertIn("COMPOUND_SKILL_RADAR", result.stdout)

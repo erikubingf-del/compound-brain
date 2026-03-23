@@ -15,6 +15,6 @@ class CodexBootstrapTests(unittest.TestCase):
 
             content = (codex_home / "AGENTS.md").read_text()
             self.assertIn("compound-brain managed runtime", content)
-            self.assertIn("~/.claude/scripts/activate_repo.py", content)
+            self.assertIn("~/.claude/scripts/codex_runtime_bridge.py", content)
             self.assertIn("~/.claude/BRAIN.md", content)
-
+            self.assertIn(".brain/state/operator-recommendation.json", content)

@@ -453,6 +453,17 @@ def build_operator_recommendation(
     active_departments = list(dict.fromkeys([item for item in active_departments if item]))
     missing_skills = [item["title"] for item in skill_state.get("missing", [])]
     active_skills = [item["title"] for item in skill_state.get("active", [])]
+    new_opportunities = [
+        {
+            "title": str(item["title"]),
+            "capability": str(item.get("capability", "")),
+            "department": str(item.get("department", lead_department)),
+            "source": str(item.get("source", "")),
+            "score": item.get("score"),
+        }
+        for item in skill_state.get("recommended", [])[:3]
+        if item.get("title")
+    ]
     constraints = list((agreement or {}).get("constraints", []))[:3]
     objections = list((agreement or {}).get("objections", []))[:3]
     reasons = list(governor.get("reasons", []))[:4]
@@ -487,6 +498,7 @@ def build_operator_recommendation(
         "trust_score": trust_score,
         "active_skills": active_skills,
         "missing_skills": missing_skills,
+        "new_opportunities": new_opportunities,
         "rationale": rationale,
     }
 
@@ -508,6 +520,14 @@ def build_operator_recommendation(
         bullet_lines.append(f"- Blocked by: {', '.join(f'`{item}`' for item in blocked_by)}")
     if missing_skills:
         bullet_lines.append(f"- Missing skills: {', '.join(f'`{item}`' for item in missing_skills[:3])}")
+    if new_opportunities:
+        bullet_lines.append(
+            "- New opportunities: "
+            + ", ".join(
+                f"`{item['title']}` ({item['department'] or lead_department})"
+                for item in new_opportunities
+            )
+        )
     if rationale:
         bullet_lines.append(f"- Why now: {' | '.join(rationale)}")
     latest_path.write_text(

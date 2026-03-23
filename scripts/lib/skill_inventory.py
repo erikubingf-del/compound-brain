@@ -379,12 +379,95 @@ def parse_external_skills(roots: list[Path]) -> list[dict[str, Any]]:
     return skills
 
 
+def parse_radar_skills(catalog_path: Path) -> tuple[list[dict[str, Any]], int, str | None]:
+    if not catalog_path.exists():
+        return [], 0, None
+    payload = json.loads(catalog_path.read_text())
+    skills: list[dict[str, Any]] = []
+    for candidate in payload.get("candidates", []):
+        title = str(candidate.get("title") or candidate.get("source_name") or "external-candidate")
+        summary = str(candidate.get("summary") or candidate.get("candidate_tip") or "External radar candidate.")
+        hints = [
+            *[str(item) for item in candidate.get("department_hints", [])],
+            *[str(item) for item in candidate.get("capability_hints", [])],
+            str(candidate.get("source_name") or ""),
+            str(candidate.get("candidate_tip") or ""),
+        ]
+        skills.append(
+            {
+                "title": title,
+                "slug": slugify(title),
+                "description": summary,
+                "next_improvements": f"Adapt {title} to the repo control plane with validation.",
+                "source": "radar",
+                "source_path": str(candidate.get("source_url") or candidate.get("source_name") or catalog_path),
+                "pattern_body": "",
+                "freshness_days": int(candidate.get("freshness_days", 9999)),
+                "tokens": sorted(normalize_tokens(title, summary, *hints)),
+                "source_trust": float(candidate.get("source_trust", 0.82)),
+                "confidence": float(candidate.get("confidence", 0.75)),
+                "candidate_tip": str(candidate.get("candidate_tip") or ""),
+            }
+        )
+    return skills, int(payload.get("version", 0)), payload.get("generated_at")
+
+
+def parse_project_tip_catalog(
+    catalog_path: Path,
+    *,
+    repo_name: str,
+) -> tuple[list[dict[str, Any]], int]:
+    if not catalog_path.exists():
+        return [], 0
+    payload = json.loads(catalog_path.read_text())
+    tips = []
+    for tip in payload.get("tips", []):
+        source_repo = str(tip.get("source_repo") or "")
+        tip_payload = {
+            "id": str(tip.get("id") or ""),
+            "source_repo": source_repo,
+            "department": str(tip.get("department") or ""),
+            "capability": str(tip.get("capability") or ""),
+            "tip": str(tip.get("tip") or ""),
+            "evidence_count": int(tip.get("evidence_count", 1)),
+            "success_count": int(tip.get("success_count", 0)),
+            "failure_count": int(tip.get("failure_count", 0)),
+            "promotion_level": str(tip.get("promotion_level") or "local-tip"),
+            "confidence": float(tip.get("confidence", 0.6)),
+            "is_local": source_repo == repo_name,
+        }
+        tips.append(tip_payload)
+    return tips, int(payload.get("version", 0))
+
+
+def load_external_intelligence(
+    claude_home: Path,
+    *,
+    repo_name: str,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, int], str | None]:
+    resources_dir = claude_home / "knowledge" / "resources"
+    radar_skills, skill_catalog_version, generated_at = parse_radar_skills(
+        resources_dir / "skill-catalog.json"
+    )
+    project_tips, tip_catalog_version = parse_project_tip_catalog(
+        resources_dir / "project-tip-catalog.json",
+        repo_name=repo_name,
+    )
+    versions = {
+        "skill_catalog": skill_catalog_version,
+        "project_tip_catalog": tip_catalog_version,
+    }
+    return radar_skills, project_tips, versions, generated_at
+
+
 def source_trust(skill: dict[str, Any]) -> float:
     source = str(skill.get("source", "external"))
     if source == "repo":
         return 1.0
     if source == "global":
         return 0.9
+    if source == "radar":
+        return float(skill.get("source_trust", 0.82))
     return 0.75
 
 
@@ -442,11 +525,41 @@ EXTERNAL_TITLE_HINTS = {
 
 
 def external_match_allowed(capability: dict[str, Any], skill: dict[str, Any]) -> bool:
-    if skill["source"] != "external":
+    if skill["source"] not in {"external", "radar"}:
         return True
     allowed = EXTERNAL_TITLE_HINTS.get(capability["id"], set())
-    title_tokens = set(normalize_tokens(skill["title"], skill["slug"]))
-    return bool(title_tokens & allowed)
+    skill_tokens = set(skill.get("tokens", []))
+    if skill["source"] == "external":
+        skill_tokens |= set(normalize_tokens(skill["title"], skill["slug"]))
+    return bool(skill_tokens & allowed)
+
+
+def project_tip_bonus(
+    capability: dict[str, Any],
+    skill: dict[str, Any],
+    project_tips: list[dict[str, Any]] | None,
+) -> tuple[int, list[str]]:
+    if not project_tips:
+        return 0, []
+
+    capability_tokens = set(capability["keywords"])
+    skill_tokens = set(skill.get("tokens", []))
+    best_bonus = 0
+    best_reason = ""
+    for tip in project_tips:
+        if tip.get("department") != capability["department"] and tip.get("capability") != capability["id"]:
+            continue
+        tip_tokens = normalize_tokens(str(tip.get("tip", "")), str(tip.get("capability", "")))
+        overlap = len((capability_tokens | skill_tokens) & tip_tokens)
+        if overlap == 0:
+            continue
+        bonus = min(3, int(tip.get("evidence_count", 1)))
+        if tip.get("is_local"):
+            bonus += 1
+        if bonus > best_bonus:
+            best_bonus = bonus
+            best_reason = f"project tip evidence: {str(tip.get('tip', ''))[:120]}"
+    return best_bonus, ([best_reason] if best_reason else [])
 
 
 def match_capability(
@@ -454,6 +567,7 @@ def match_capability(
     skills: list[dict[str, Any]],
     source_pack: dict[str, Any] | None = None,
     exclude_slugs: set[str] | None = None,
+    project_tips: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any] | None:
     exclude_slugs = exclude_slugs or set()
     ranked: list[tuple[int, dict[str, Any], list[str]]] = []
@@ -463,6 +577,9 @@ def match_capability(
         if not external_match_allowed(capability, skill):
             continue
         score, reasons = score_skill(capability, skill, source_pack=source_pack)
+        tip_bonus, tip_reasons = project_tip_bonus(capability, skill, project_tips)
+        score += tip_bonus
+        reasons.extend(tip_reasons)
         if score <= 0:
             continue
         ranked.append((score, skill, reasons))
@@ -501,11 +618,31 @@ def load_local_global_external_skills(
     project_dir: Path,
     claude_home: Path,
     approved_external_roots: list[Path],
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+) -> tuple[
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    dict[str, int],
+    str | None,
+]:
     local = parse_skill_graph(project_dir / ".brain" / "knowledge" / "skills", "repo")
     global_skills = parse_skill_graph(claude_home / "knowledge" / "skills", "global")
     external = parse_external_skills(approved_external_roots)
-    return local, global_skills, external
+    radar_skills, project_tips, catalog_versions, external_generated_at = load_external_intelligence(
+        claude_home,
+        repo_name=project_dir.name,
+    )
+    return (
+        local,
+        global_skills,
+        external,
+        radar_skills,
+        project_tips,
+        catalog_versions,
+        external_generated_at,
+    )
 
 
 def classify_local_skills(
@@ -580,7 +717,7 @@ def materialize_recommendations(
     recommendations: list[dict[str, Any]],
     capabilities_by_title: dict[str, dict[str, Any]],
     source_packs: dict[str, dict[str, Any]],
-    limit: int = 2,
+    limit: int = 3,
 ) -> list[dict[str, Any]]:
     ranked_recommendations = sorted(
         recommendations,
@@ -594,7 +731,7 @@ def materialize_recommendations(
     materialized: list[dict[str, Any]] = []
     seen_titles: set[str] = set()
     for recommendation in ranked_recommendations:
-        if recommendation["source"] not in {"global", "external"}:
+        if recommendation["source"] not in {"global", "external", "radar"}:
             continue
         if recommendation["score"] < 3:
             continue
@@ -659,7 +796,15 @@ def refresh_repo_skill_state(
     capabilities = infer_required_capabilities(project_dir, departments)
     all_departments = sorted(set(departments) | {item["department"] for item in capabilities})
     source_packs = load_department_source_packs(project_dir, all_departments)
-    local_skills, global_skills, external_skills = load_local_global_external_skills(
+    (
+        local_skills,
+        global_skills,
+        external_skills,
+        radar_skills,
+        project_tips,
+        catalog_versions,
+        external_generated_at,
+    ) = load_local_global_external_skills(
         project_dir,
         claude_home,
         approved_external_roots,
@@ -674,17 +819,19 @@ def refresh_repo_skill_state(
         department: {
             "department": department,
             "reviewed_at": now_utc(),
+            "last_refresh": now_utc(),
             "missing_capabilities": [],
             "candidate_skills": [],
             "adopted_skills": [],
             "rejected_candidates": [],
             "source_pack": source_packs.get(department, {}),
+            "source_catalog_version": 0,
             "next_review_at": None,
         }
         for department in all_departments
     }
 
-    global_external = global_skills + external_skills
+    global_external = global_skills + radar_skills + external_skills
     for capability in capabilities:
         department = capability["department"]
         if capability["title"] in {cap for item in active for cap in item["matched_capabilities"]}:
@@ -694,6 +841,7 @@ def refresh_repo_skill_state(
             global_external,
             source_pack=source_packs.get(department, {}),
             exclude_slugs={slugify(title) for title in active_titles},
+            project_tips=project_tips,
         )
         if match and match["score"] >= 2:
             recommendations.append(match)
@@ -716,7 +864,7 @@ def refresh_repo_skill_state(
         source_packs=source_packs,
     )
     if materialized:
-        local_skills, _, _ = load_local_global_external_skills(
+        local_skills, _, _, _, _, _, _ = load_local_global_external_skills(
             project_dir,
             claude_home,
             approved_external_roots,
@@ -730,6 +878,7 @@ def refresh_repo_skill_state(
             department_shopping[item["department"]]["adopted_skills"].append(item)
 
     for department, payload in department_shopping.items():
+        payload["source_catalog_version"] = int(catalog_versions.get("skill_catalog", 0))
         payload["candidate_skills"] = sorted(
             payload["candidate_skills"],
             key=lambda item: (item["score"], item["source_trust"], -item["freshness_days"]),
@@ -740,6 +889,8 @@ def refresh_repo_skill_state(
         "generated_at": now_utc(),
         "repo": project_dir.name,
         "departments": all_departments,
+        "last_external_refresh": external_generated_at,
+        "catalog_versions": catalog_versions,
         "required_capabilities": capabilities,
         "active": active,
         "recommended": [
@@ -764,6 +915,7 @@ def refresh_repo_skill_state(
         "inventory_counts": {
             "repo": len(local_skills),
             "global": len(global_skills),
+            "radar": len(radar_skills),
             "external": len(external_skills),
         },
     }

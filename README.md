@@ -72,6 +72,17 @@ The global install is the cross-project orchestrator. It is responsible for:
 This layer should improve itself over time without depending on any single
 project repo.
 
+It now also owns a global skill radar:
+
+- `~/.claude/knowledge/resources/skill-catalog.json`
+- `~/.claude/knowledge/resources/project-tip-catalog.json`
+- `~/.claude/knowledge/resources/skill-radar-latest.md`
+- `~/.claude/policy/skill-radar-policy.json`
+
+That radar runs on cron, searches approved GitHub patterns by department and
+capability fit, sweeps transferable tips from activated repos, and feeds the
+same proposal surface back into repo-local skill shopping.
+
 ## Core model
 
 - Global brain in `~/.claude/`
@@ -86,6 +97,7 @@ project repo.
   - department contracts, local settings, hook wrappers
 - Codex adapter in `.codex/AGENTS.md`
   - reads the same repo control plane as Claude
+  - uses `~/.claude/scripts/codex_runtime_bridge.py` to wake the same runtime
   - does not create a second repo runtime
 
 ## What activated repos become
@@ -250,6 +262,9 @@ Activated repos also get real event loops:
   blocked items, trust score, and recommended next bounded move
 - `Stop` refreshes project state and updates self-hosting scorecards when relevant
 - repo cron refreshes audit and briefs, then runs department and autoresearch cycles
+- the global skill-radar cron refreshes external GitHub candidates and
+  cross-project tips, and repo runtime wakes consume that cached intelligence
+  without hitting GitHub directly on every session
 
 ## Autonomy Depth Governor
 
@@ -409,13 +424,14 @@ Implemented in the current MVP branch:
 - shared project runtime event engine for session start, stop, and cron autoimprovement
 - heartbeat ledger, lockfiles, retry backoff, and watchdog reporting for activated repos
 - repo-aware skill matching across local, global, and approved external skill sources with department shopping state and repo adaptation
+- global GitHub skill radar plus project-tip catalog feeding repo-local skill proposals
 - autonomy-depth policy, fail-closed context snapshots, runtime packets, cross-department arbitration, and trust-governed depth state with history
 - evaluator-backed autoresearch execution with keep/discard results and worktree-isolated mutation lanes
 - local skill promotion, global promotion inbox, scheduled review, and approved
   promotion application into canonical global knowledge
 - self-hosting evaluator surfaces plus scorecard automation
 - self-hosting Ralph auto-routing for eligible `compound-brain` cron lanes
-- managed Codex bootstrap and shared nightly review wrapper
+- managed Codex bootstrap, runtime bridge, and shared nightly review wrapper
 
 ## Feature status
 
@@ -435,11 +451,11 @@ Implemented in the current MVP branch:
 | Heartbeat + watchdog | Stable | Retry backoff, missed-heartbeat alerts |
 | Promotion inbox + review | Stable | Repo → global review → approved apply |
 | Ralph auto-routing | Stable | Self-hosting (`compound-brain`) only |
-| Codex bootstrap | Stable | Shared control plane via same files |
+| Codex bootstrap + bridge | Stable | Managed `AGENTS.md` plus runtime freshness gate |
 | Self-hosting evaluator | Stable | Locked contract + scorecard |
 | Community skill examples | Growing | 1 example (ui-master); more welcome |
 | Worktree-isolated mutations | Stable | Mutation command runs in temporary worktree lanes |
-| Full Codex execution parity | Partial | Bootstrap works; deep loops TBD |
+| Full native Codex hook parity | Partial | Shared runtime works; vendor-native hooks still TBD |
 | Real-world case studies | Wanted | See `community/case-studies/TEMPLATE.md` |
 
 The system is safe to use today at depths 2–3 for any activated repo.
@@ -448,5 +464,5 @@ enablement and a validated evaluator contract.
 
 Still evolving:
 - richer promotion authoring from departments into global QMP/skills/decisions
-- broader external skill-source intelligence beyond the current approved-root model
+- stronger ranking, validation, and benchmark proof for external skill radar proposals
 - more real-world case studies and benchmarks

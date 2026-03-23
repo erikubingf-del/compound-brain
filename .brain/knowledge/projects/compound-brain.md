@@ -21,8 +21,8 @@ brain scaffold, auditor, intelligence scripts, and docs. The next milestone is
 the advanced autonomy layer with the final lifecycle and self-hosting model:
 `observe -> preview -> prepare -> activate` for ordinary repos, plus
 `compound-brain` as an always-prepared, always-activated orchestrator source
-repo. The first implementation tranche for that model now exists on branch
-`codex/activate-repo-mvp`.
+repo. That core model is now merged on `main`; the next milestone is stronger
+public proof through benchmarks, case studies, and community usage.
 
 ## Scope
 In scope:
@@ -39,7 +39,7 @@ In scope:
   approval-controlled architecture evaluator
 
 Out of scope for v1:
-- Full Codex parity beyond shared file compatibility
+- Vendor-native Codex hook APIs beyond the managed runtime bridge
 - Auto-merge to main
 - Hosted remote control plane
 - Generalized execution across every language stack on day one
@@ -90,6 +90,12 @@ Out of scope for v1:
   latest operator brief so session-start and cron wake-ups persist which
   department is active, what is blocked, why the next move was chosen, and
   whether the repo is in planning, approval wait, or ready-to-execute mode
+- The latest runtime tranche adds a managed Codex runtime bridge plus a global
+  skill radar: Codex can reuse fresh repo runtime state through one shared
+  bridge, and the global plane now writes `skill-catalog.json`,
+  `project-tip-catalog.json`, and `skill-radar-latest.md` from scheduled
+  GitHub and repo-tip sweeps so activated repos can propose higher-fit skills
+  without doing direct GitHub search on every session wake
 - The self-hosting runtime now adds a gated Ralph lane for `compound-brain`:
   eligible cron work can generate a one-story PRD, run one Ralph iteration,
   and record `.brain/state/ralph-state.json` instead of always using the
@@ -124,6 +130,8 @@ Out of scope for v1:
 - Ralph as an automatic outer loop for eligible self-hosting cron work
 - Community contribution lanes with promotion-oriented review instead of direct
   runtime mutation
+- Global GitHub skill radar plus project-tip catalog feeding repo-local skill
+  proposals and Codex/Claude runtime packets
 
 ## Key Decisions
 - Make the public product an actionable Claude skill run inside a repo
@@ -157,15 +165,15 @@ Out of scope for v1:
   gates, rubric checks, and smoke canary
 - Decide whether self-hosting Ralph lanes should stay Codex-first or become
   policy-selectable by default agent
-- Broaden skill-source intelligence beyond the current approved-root and
-  source-pack model so department shopping can learn from a wider external set
 - Turn the new proactive-operator principle into public proof through
   benchmarks, case studies, and explicit credibility docs
+- Benchmark the new global skill radar and Codex runtime bridge on real repos
+  so proposal quality and freshness can be tuned from evidence instead of
+  design instinct
 - Seed the new community lanes with exemplar contributions for `frontend`,
   `backend`, and `finance`
 - Open the first benchmark and case study issues to create visible community
   loops around real activated repos
-- Decide whether to merge `codex/activate-repo-mvp` or keep iterating in branch
 
 ## Links
 - Repo: /Users/erikfigueiredo/compound-brain

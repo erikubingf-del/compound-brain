@@ -432,3 +432,38 @@ and `autoresearch_runner.py`, with regression coverage in dedicated tests.
 runtime, not bypass it. Department execution must be mission-based, skill
 adoption must be department-aware, and mutation experiments must run in
 isolated lanes.
+
+---
+
+## DEC-017 — Codex should enter the same runtime through a managed bridge, and external skill intelligence should be cached globally
+**Date:** 2026-03-23
+**Priority:** P1
+**Context:** After mission packets, deeper skill shopping, and isolated
+autoresearch landed, two gaps remained in the vision: Codex still relied on a
+bootstrap document more than a real runtime wake protocol, and repo skill
+shopping still depended too heavily on repo-local/global skills plus approved
+skill roots instead of a broader external intelligence loop.
+**Options Considered:**
+- Keep Codex parity at documentation/bootstrap level and leave external skill discovery mostly local
+- Add a separate Codex-only runtime or scheduler plus repo-local GitHub scans
+- Add a managed Codex runtime bridge into the shared event engine and a global
+  cached skill radar fed by GitHub plus activated-repo tips
+**Reasoning:** The third option preserves one control plane. Codex can wake
+through the same runtime by reusing fresh repo state or dispatching the same
+`session-start` event Claude uses, while the global plane can absorb broader
+GitHub intelligence on a fixed cron and feed ranked candidates back into repo
+skill shopping without forcing every session to hit GitHub directly. That
+keeps parity credible, sessions fast, and skill acquisition more intelligent.
+**Expected Outcome:** Codex starts activated repos from the same operator brief
+and runtime packet as Claude, global cron writes `skill-catalog.json` and
+`project-tip-catalog.json`, and repo skill refresh can materialize or propose
+better-fit skills from cached external evidence plus local project tips.
+**Actual Outcome:** Implemented through `codex_runtime_bridge.py`,
+`skill_radar_refresh.py`, `scripts/lib/skill_radar.py`, updated installer and
+bootstrap wiring, and skill-inventory/runtime-governor integration, with new
+regression tests covering the bridge, radar, install path, and operator
+opportunity surfacing.
+**Rule established:** Codex parity should happen through one managed bridge
+into the shared runtime, and broader external skill intelligence should be
+gathered globally on cron, cached in `~/.claude`, and consumed by repo-local
+skill shopping rather than by ad hoc per-session web searching.

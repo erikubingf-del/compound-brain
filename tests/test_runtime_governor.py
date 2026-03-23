@@ -152,6 +152,7 @@ class RuntimeGovernorTests(unittest.TestCase):
                 skill_state={
                     "active": [{"title": "systematic-debugging"}],
                     "missing": [{"title": "Release Operations"}],
+                    "recommended": [{"title": "report-crafter", "capability": "Product Documentation"}],
                 },
                 allowed_actions=["bounded-edit", "validation"],
                 blocked_actions=["autoresearch"],
@@ -161,5 +162,6 @@ class RuntimeGovernorTests(unittest.TestCase):
             self.assertIn("department_goal", recommendation["blocked_by"])
             self.assertIn("Release Operations", recommendation["missing_skills"])
             self.assertEqual(recommendation["recommended_next_action"], "Fix pipeline sync regression")
+            self.assertEqual(recommendation["new_opportunities"][0]["title"], "report-crafter")
             self.assertTrue((repo / ".brain" / "state" / "operator-recommendation.json").exists())
             self.assertTrue((repo / ".brain" / "knowledge" / "daily" / "operator_brief_latest.md").exists())

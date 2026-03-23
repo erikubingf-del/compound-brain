@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "refresh_hours": 12,
+  "per_query_limit": 3,
+  "max_queries_per_repo": 6,
+  "max_candidates_per_repo": 12,
+  "minimum_stars": 300,
+  "minimum_stars_by_department": {
+    "architecture": 750,
+    "engineering": 500,
+    "operations": 500,
+    "product": 250,
+    "research": 400
+  },
+  "approved_query_terms": [
+    "agent",
+    "automation",
+    "architecture",
+    "workflow",
+    "report",
+    "documentation",
+    "frontend",
+    "backend",
+    "release",
+    "evaluation"
+  ]
+}
