@@ -197,6 +197,7 @@ once activated, see [`GETTING-STARTED.md`](GETTING-STARTED.md).
 - `.brain/state/autonomy-depth.json`
 - `.brain/state/runtime-governor.json`
 - `.brain/state/runtime-packet.json`
+- `.brain/state/operator-recommendation.json`
 - `.brain/state/context-snapshot.json`
 - `.brain/state/departments/*.json`
 - `.brain/state/skills.json`
@@ -238,6 +239,8 @@ approvals, and department state.
 
 Activated repos also get real event loops:
 - `SessionStart` refreshes audit, intelligence brief, and ranked actions
+- `SessionStart` also writes an operator brief with the active department lane,
+  blocked items, trust score, and recommended next bounded move
 - `Stop` refreshes project state and updates self-hosting scorecards when relevant
 - repo cron refreshes audit and briefs, then runs department and autoresearch cycles
 

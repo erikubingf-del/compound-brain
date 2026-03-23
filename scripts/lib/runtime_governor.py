@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 import json
 from pathlib import Path
 from typing import Any
@@ -398,4 +398,122 @@ def build_runtime_packet(
     state_path = repo / ".brain" / "state" / "runtime-packet.json"
     state_path.parent.mkdir(parents=True, exist_ok=True)
     state_path.write_text(json.dumps(payload, indent=2) + "\n")
+    return payload
+
+
+def operator_mode(
+    approval_state: dict[str, Any],
+    allowed_actions: list[str],
+    blocked_actions: list[str],
+    context_snapshot: dict[str, Any] | None,
+    agreement: dict[str, Any] | None,
+) -> tuple[str, list[str]]:
+    blocked_by = list(approval_state.get("pending", []))
+    if context_snapshot is not None and not context_snapshot.get("context_ok", True):
+        blocked_by.append("missing_context")
+    agreement_result = str((agreement or {}).get("result", "agree"))
+    if agreement_result in {"object", "escalate"}:
+        blocked_by.append(f"department_{agreement_result}")
+    if "bounded-edit" in blocked_actions and "bounded-edit" not in allowed_actions and "planning_only" not in blocked_by:
+        blocked_by.append("planning_only")
+
+    if blocked_by:
+        if any(item.startswith("department_") or item == "missing_context" for item in blocked_by):
+            return "blocked", list(dict.fromkeys(blocked_by))
+        return "awaiting-approval", list(dict.fromkeys(blocked_by))
+    if "bounded-edit" in allowed_actions:
+        return "ready-to-execute", []
+    return "planning", []
+
+
+def build_operator_recommendation(
+    repo: Path,
+    event: str,
+    current_depth: int,
+    goal: str,
+    top_action: str,
+    lead_department: str,
+    supporting_departments: list[str],
+    approval_state: dict[str, Any],
+    governor: dict[str, Any],
+    skill_state: dict[str, Any],
+    allowed_actions: list[str],
+    blocked_actions: list[str],
+    agreement: dict[str, Any] | None = None,
+    context_snapshot: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    mode, blocked_by = operator_mode(
+        approval_state=approval_state,
+        allowed_actions=allowed_actions,
+        blocked_actions=blocked_actions,
+        context_snapshot=context_snapshot,
+        agreement=agreement,
+    )
+    active_departments = [lead_department, *supporting_departments]
+    active_departments = list(dict.fromkeys([item for item in active_departments if item]))
+    missing_skills = [item["title"] for item in skill_state.get("missing", [])]
+    active_skills = [item["title"] for item in skill_state.get("active", [])]
+    constraints = list((agreement or {}).get("constraints", []))[:3]
+    objections = list((agreement or {}).get("objections", []))[:3]
+    reasons = list(governor.get("reasons", []))[:4]
+    trust_score = int(governor.get("trust_score", 0))
+
+    rationale: list[str] = []
+    rationale.extend(reasons[:2])
+    if constraints:
+        rationale.append(f"constraints: {'; '.join(constraints)}")
+    if objections:
+        rationale.append(f"objections: {'; '.join(objections)}")
+    if missing_skills:
+        rationale.append(f"missing skills: {', '.join(missing_skills[:3])}")
+    if not rationale:
+        rationale.append("bounded action available")
+
+    payload = {
+        "version": 1,
+        "generated_at": now_utc(),
+        "event": event,
+        "repo": repo.resolve().name,
+        "current_depth": current_depth,
+        "mode": mode,
+        "goal": goal,
+        "recommended_next_action": top_action,
+        "active_departments": active_departments,
+        "lead_department": lead_department,
+        "supporting_departments": supporting_departments,
+        "blocked_by": blocked_by,
+        "allowed_actions": allowed_actions,
+        "blocked_actions": blocked_actions,
+        "trust_score": trust_score,
+        "active_skills": active_skills,
+        "missing_skills": missing_skills,
+        "rationale": rationale,
+    }
+
+    state_path = repo / ".brain" / "state" / "operator-recommendation.json"
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+    state_path.write_text(json.dumps(payload, indent=2) + "\n")
+
+    latest_path = repo / ".brain" / "knowledge" / "daily" / "operator_brief_latest.md"
+    latest_path.parent.mkdir(parents=True, exist_ok=True)
+    bullet_lines = [
+        f"- Mode: `{mode}`",
+        f"- Goal: {goal}",
+        f"- Recommended next action: {top_action}",
+        f"- Lead department: `{lead_department}`",
+        f"- Active departments: {', '.join(f'`{item}`' for item in active_departments)}",
+        f"- Trust score: {trust_score}",
+    ]
+    if blocked_by:
+        bullet_lines.append(f"- Blocked by: {', '.join(f'`{item}`' for item in blocked_by)}")
+    if missing_skills:
+        bullet_lines.append(f"- Missing skills: {', '.join(f'`{item}`' for item in missing_skills[:3])}")
+    if rationale:
+        bullet_lines.append(f"- Why now: {' | '.join(rationale)}")
+    latest_path.write_text(
+        f"# Operator Brief — {repo.name}\n\n"
+        f"Generated: {now_utc()}\n\n"
+        + "\n".join(bullet_lines)
+        + "\n"
+    )
     return payload

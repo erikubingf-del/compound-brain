@@ -108,6 +108,8 @@ class ProjectRuntimeEventTests(unittest.TestCase):
             self.assertTrue((repo / ".brain" / "state" / "skills.json").exists())
             self.assertTrue((repo / ".brain" / "state" / "context-snapshot.json").exists())
             self.assertTrue((repo / ".brain" / "state" / "runtime-packet.json").exists())
+            self.assertTrue((repo / ".brain" / "state" / "operator-recommendation.json").exists())
+            self.assertTrue((repo / ".brain" / "knowledge" / "daily" / "operator_brief_latest.md").exists())
             store = RuntimeHeartbeatStore(repo / ".global-brain" / "registry" / "runtime-heartbeats", repo / ".global-brain" / "registry" / "runtime-locks")
             self.assertEqual(store.load(repo)["events"]["session-start"]["status"], "ok")
 

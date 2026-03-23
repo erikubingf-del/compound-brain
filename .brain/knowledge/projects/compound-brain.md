@@ -81,6 +81,10 @@ Out of scope for v1:
   proactive, memory-driven operator system whose hooks and heartbeats should
   recommend and run the next best bounded moves instead of waiting passively
   for user prompts
+- Activated repos now write `.brain/state/operator-recommendation.json` and a
+  latest operator brief so session-start and cron wake-ups persist which
+  department is active, what is blocked, why the next move was chosen, and
+  whether the repo is in planning, approval wait, or ready-to-execute mode
 - The self-hosting runtime now adds a gated Ralph lane for `compound-brain`:
   eligible cron work can generate a one-story PRD, run one Ralph iteration,
   and record `.brain/state/ralph-state.json` instead of always using the

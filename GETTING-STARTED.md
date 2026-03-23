@@ -26,6 +26,7 @@ your-repo/
 │   └── state/                       ← runtime files (.gitignore these)
 │       ├── skills.json              ← active, recommended, missing skills
 │       ├── autonomy-depth.json      ← current depth + trust score
+│       ├── operator-recommendation.json ← what should happen next and why
 │       └── departments/             ← per-dept action state
 └── .claude/
     ├── departments/                 ← dept contracts (owned surfaces, allowed actions)
@@ -52,6 +53,8 @@ autonomously, and gate changes that affect their surfaces.
 1. SessionStart hook fires
 2. Runtime reads .brain/state/action-queue.md
    (probability engine ranked: bug-fix P1, test-coverage P2, refactor P3)
+   and writes .brain/state/operator-recommendation.json
+   (lead department, blocked approvals, trust score, next bounded move)
 
 3. Engineering dept is the lead for P1 (bug-fix)
    → Engineering reads its contract: .claude/departments/engineering.md
@@ -113,6 +116,7 @@ architecture objection is unresolved.
 ```bash
 cat .brain/state/autonomy-depth.json
 cat .brain/state/runtime-governor.json
+cat .brain/state/operator-recommendation.json
 ```
 
 **Most repos should start at depth 2, reach depth 3 within a week of normal

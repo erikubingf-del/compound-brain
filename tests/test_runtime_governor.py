@@ -5,6 +5,7 @@ import unittest
 
 from scripts.lib.runtime_governor import (
     build_context_snapshot,
+    build_operator_recommendation,
     build_runtime_governor,
     build_runtime_packet,
 )
@@ -127,3 +128,38 @@ class RuntimeGovernorTests(unittest.TestCase):
             self.assertEqual(packet["lead_department"], "engineering")
             self.assertTrue(packet["context_ok"])
             self.assertIn("bounded-edit", packet["allowed_actions"])
+
+    def test_build_operator_recommendation_persists_active_departments_and_blockers(self) -> None:
+        with TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            (repo / ".brain" / "state").mkdir(parents=True)
+            (repo / ".brain" / "knowledge" / "daily").mkdir(parents=True)
+
+            recommendation = build_operator_recommendation(
+                repo=repo,
+                event="session-start",
+                current_depth=3,
+                goal="Ship a reliable CRM release",
+                top_action="Fix pipeline sync regression",
+                lead_department="engineering",
+                supporting_departments=["architecture", "product"],
+                approval_state={"state": "approved", "pending": ["department_goal"]},
+                governor={
+                    "trust_score": 71,
+                    "reasons": ["context packet complete", "skill coverage incomplete"],
+                    "agreement": {"constraints": ["Respect architecture boundaries"], "objections": []},
+                },
+                skill_state={
+                    "active": [{"title": "systematic-debugging"}],
+                    "missing": [{"title": "Release Operations"}],
+                },
+                allowed_actions=["bounded-edit", "validation"],
+                blocked_actions=["autoresearch"],
+            )
+
+            self.assertEqual(recommendation["active_departments"][0], "engineering")
+            self.assertIn("department_goal", recommendation["blocked_by"])
+            self.assertIn("Release Operations", recommendation["missing_skills"])
+            self.assertEqual(recommendation["recommended_next_action"], "Fix pipeline sync regression")
+            self.assertTrue((repo / ".brain" / "state" / "operator-recommendation.json").exists())
+            self.assertTrue((repo / ".brain" / "knowledge" / "daily" / "operator_brief_latest.md").exists())

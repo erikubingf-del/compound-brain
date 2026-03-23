@@ -352,6 +352,33 @@ and confidence remains evidence-weighted rather than absolute.
 
 ---
 
+## DEC-015 — Activated repos should persist an explicit operator brief on every runtime wake-up
+**Date:** 2026-03-23
+**Priority:** P2
+**Context:** The runtime already computed ranked actions, lead departments,
+approvals, skills, and trust, but that state was scattered across multiple
+files. The proactive operator model needed one canonical answer to: what should
+happen next, which department is active, what is blocked, and why.
+**Options Considered:**
+- Keep the runtime state distributed across packet, governor, queue, and skills
+  files
+- Depend on the LLM to reconstruct the current operator stance from raw state
+- Persist an explicit operator recommendation and latest operator brief on every
+  session-start, cron, and stop event
+**Reasoning:** A proactive system should not make the model or the user rebuild
+the current next move from scratch every session. Writing one operator brief
+turns the existing state into a compact control surface that both humans and
+LLMs can trust quickly.
+**Expected Outcome:** Activated repos always carry a current recommendation file
+and latest brief showing the lead department, supporting departments, blocked
+approvals, trust score, missing skills, and next bounded action.
+**Actual Outcome:** Implemented in the shared runtime governor and event engine,
+covered by runtime-governor and project-runtime tests.
+**Rule established:** Every activated runtime wake-up should persist a compact
+operator recommendation, not just low-level state files.
+
+---
+
 ## DEC-004 — Add pre-tool-use write guard for protected surfaces
 **Date:** 2026-03-22
 **Priority:** P1

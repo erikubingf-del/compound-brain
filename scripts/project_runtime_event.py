@@ -28,6 +28,7 @@ try:
     from scripts.lib.runtime_governor import (
         allowed_actions_for_event,
         build_context_snapshot,
+        build_operator_recommendation,
         build_runtime_governor,
         build_runtime_packet,
         choose_lead_department,
@@ -53,6 +54,7 @@ except ModuleNotFoundError:
     from lib.runtime_governor import (
         allowed_actions_for_event,
         build_context_snapshot,
+        build_operator_recommendation,
         build_runtime_governor,
         build_runtime_packet,
         choose_lead_department,
@@ -312,6 +314,22 @@ def run_project_runtime_event(project_dir: Path, event: str) -> dict[str, Any]:
                     agreement=agreement,
                     execution_mode=ralph_decision["mode"],
                     ralph=ralph_decision,
+                )
+                build_operator_recommendation(
+                    repo=project_dir,
+                    event=event,
+                    current_depth=int(depth_state["current_depth"]),
+                    goal=ranking["goal"],
+                    top_action=ranking["top_action"],
+                    lead_department=lead_department,
+                    supporting_departments=supporting_departments,
+                    approval_state=approval_state,
+                    governor=governor,
+                    skill_state=skills,
+                    allowed_actions=allowed_actions,
+                    blocked_actions=blocked_actions,
+                    agreement=agreement,
+                    context_snapshot=context_snapshot,
                 )
 
                 if not context_snapshot["context_ok"]:
