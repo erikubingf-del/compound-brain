@@ -1,7 +1,7 @@
 ---
 title: compound-brain
 status: active
-updated: 2026-03-22
+updated: 2026-03-23
 ---
 
 # compound-brain
@@ -11,6 +11,9 @@ Build a public GitHub framework and activation skill that makes an opted-in repo
 "alive" by installing a global orchestrator once, previewing repos read-only by
 default, preparing static project brains on request, and activating repo-local
 departments and bounded autonomous loops only when explicitly enabled.
+The stronger principle is that activated repos should behave like proactive,
+memory-driven project operators that recommend and execute the next best
+bounded move from evidence, not like passive question-answer sessions.
 
 ## Status
 Architecture direction approved. The repo already has a first-pass installer,
@@ -74,6 +77,10 @@ Out of scope for v1:
   history, healthy streaks, and agreement-aware depth movement so operations or
   architecture objections can push higher-depth cron work back into planning
   instead of letting execution continue blindly
+- The public docs and project rule now explicitly define `compound-brain` as a
+  proactive, memory-driven operator system whose hooks and heartbeats should
+  recommend and run the next best bounded moves instead of waiting passively
+  for user prompts
 - The self-hosting runtime now adds a gated Ralph lane for `compound-brain`:
   eligible cron work can generate a one-story PRD, run one Ralph iteration,
   and record `.brain/state/ralph-state.json` instead of always using the
@@ -89,6 +96,7 @@ Out of scope for v1:
 
 ## Key Concepts
 - Shared runtime + per-repo preview/prepare/activate overlay
+- Proactive, memory-driven project operators rather than reactive responders
 - Strategic confirmation only for project goal, department goals, major
   architecture changes, and evaluator changes
 - Repo-local `.claude/` hooks only after a repo becomes activated
@@ -114,6 +122,9 @@ Out of scope for v1:
   `.brain/`, and `.claude/`
 - Make `compound-brain` always prepared and always activated as the
   self-improving orchestrator source repo
+- Make proactivity explicit: the runtime should recommend what happens next,
+  wake the right department lane, and move from memory and evidence rather than
+  waiting for the user to restate context each session
 
 ## Risks
 - Existing installer/docs still describe a more generic runtime and will drift
@@ -126,7 +137,6 @@ Out of scope for v1:
   criteria if evaluator changes are not approval-gated
 
 ## Next Actions
-- Decide how to integrate `codex/activate-repo-mvp`
 - Extend department cycles from gated queue handling into richer execution and
   evaluator-aware actions
 - Add worktree-isolated experiment mutation around the evaluator-backed
@@ -142,6 +152,8 @@ Out of scope for v1:
   approved external skill inventory grows
 - Deepen department execution once the new arbitration and trust-history gates
   have stabilized under more realistic project workloads
+- Turn the new proactive-operator principle into public proof through
+  benchmarks, case studies, and explicit credibility docs
 - Seed the new community lanes with exemplar contributions for `frontend`,
   `backend`, and `finance`
 - Open the first benchmark and case study issues to create visible community

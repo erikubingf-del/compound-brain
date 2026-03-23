@@ -1,5 +1,21 @@
 # compound-brain — Architecture
 
+## Operating principle
+
+`compound-brain` is designed to make LLMs behave like proactive, memory-driven
+project operators, not passive question-answer systems.
+
+That means:
+
+- hooks and cron jobs wake one shared runtime
+- the runtime preloads bounded context before reasoning
+- departments decide who should lead the current lane
+- the system recommends the next best bounded move from evidence
+- approvals, trust, and evaluators keep that proactivity credible
+
+The target is evidence-weighted high confidence, not claims of perfect
+certainty.
+
 ## Lifecycle
 
 Ordinary repos follow:
@@ -74,6 +90,13 @@ Cycle shape:
 - log result
 - stop or escalate
 
+Operator expectation:
+- `session-start` should surface what matters next
+- `user-request` should merge user intent with repo memory and department scope
+- `cron` should keep the repo moving between sessions when evidence says it is
+  safe
+- `stop` should convert work into durable experience
+
 Runtime governance:
 - every event writes `.brain/state/context-snapshot.json`
 - every event writes `.brain/state/runtime-packet.json`
@@ -88,6 +111,13 @@ Hook and cron wiring:
 - `project_stop.py` dispatches to the shared runtime event engine
 - `project_llm_cron.py` dispatches to the shared runtime event engine
 - the shared engine refreshes audits, intelligence briefs, ranked actions, and bounded runtime cycles
+
+Heartbeat expectation:
+- hooks wake the runtime on session boundaries
+- cron provides recurring heartbeats between sessions
+- heartbeats should identify the active department lane, blocked approvals,
+  recommended next action, and whether the repo can safely execute or should
+  stay in planning mode
 
 Depth behavior:
 - depth `2` keeps cron in planning-only mode
@@ -124,6 +154,10 @@ These gate:
 Before confirmation, activation may also store a recommendation packet in the
 approval state so the user sees a stronger proposed `project_goal` or
 repo-native department alignment before approving strategy.
+
+This preserves the right split:
+- the runtime should proactively recommend what should happen next
+- the user still owns strategic direction changes
 
 ## Autoresearch model
 

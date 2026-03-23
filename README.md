@@ -6,6 +6,24 @@
 Codex adapter into `~/.codex/AGENTS.md`, so both tools operate with the same
 memory model, repo language, and runtime rules.
 
+## Core Principle
+
+`compound-brain` exists to turn LLMs from reactive responders into proactive,
+memory-driven project operators.
+
+That means the runtime should:
+
+- wake on hooks and cron heartbeats instead of waiting for perfect prompts
+- preload the smallest correct context from `CLAUDE.md`, `.brain/`, `.claude/`,
+  QMP, logs, and approvals
+- decide which department should lead and which supporting departments matter
+- recommend the next best bounded action instead of only answering the last
+  question asked
+- act only when approvals, trust, protected surfaces, and evaluators allow it
+
+The goal is not unlimited autonomy. The goal is evidence-weighted,
+high-confidence progress toward the repo's objective.
+
 After install, Claude and Codex should:
 - search and write against the same PARA/QMP-style knowledge system
 - read the same repo control surfaces: `CLAUDE.md`, `.brain/`, and `.claude/`
@@ -14,6 +32,21 @@ After install, Claude and Codex should:
 
 That gives you one orchestrator across tools, and one living project brain per
 activated repo instead of parallel Claude/Codex memory systems.
+
+## Credibility Contract
+
+`compound-brain` should feel active and useful, but it should stay credible.
+
+So the project makes these stronger claims:
+
+- hooks and cron jobs are wake-up mechanisms into one shared runtime, not
+  separate agent brains
+- every autonomous step should be traceable through state files, logs,
+  approvals, evaluator results, or heartbeat records
+- activated repos should recommend what happens next before they attempt to act
+- departments may be proactive, but they stay bounded by owned surfaces,
+  approvals, and current autonomy depth
+- confidence is evidence-weighted, not mystical certainty or oracle behavior
 
 Repos then move through a strict lifecycle:
 
@@ -65,6 +98,17 @@ orchestrator:
 - hooks and cron-driven loops keep reviewing, logging, and improving work
 - project-specific skills, QMP, and decisions accumulate in `.brain/`
 - strategic changes still go through approvals instead of silent drift
+
+Activated repos should therefore feel less like a chat session and more like a
+disciplined operating company:
+
+- `SessionStart` wakes the repo brain, refreshes context, and surfaces the best
+  next move
+- `Stop` compresses learning into logs, skills, and decisions
+- heartbeat cron runs keep departments reviewing, researching, and maintaining
+  progress between sessions
+- the runtime should proactively say what should happen next, which department
+  is active, what is blocked, and why
 
 ## Community growth model
 
@@ -186,6 +230,11 @@ The runtime always gates before acting:
 - owned/protected surfaces
 - bounded action selection
 - logged result
+
+The runtime should not wait passively for the user to reconstruct project
+context every session. It should wake into the repo's current reality and
+recommend the next highest-confidence move from memory, logs, QMP, skills,
+approvals, and department state.
 
 Activated repos also get real event loops:
 - `SessionStart` refreshes audit, intelligence brief, and ranked actions

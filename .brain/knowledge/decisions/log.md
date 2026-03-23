@@ -324,6 +324,34 @@ department agreement all pass the Ralph policy gate.
 
 ---
 
+## DEC-014 — `compound-brain` should optimize for proactive operator behavior, not passive question answering
+**Date:** 2026-03-23
+**Priority:** P1
+**Context:** The architecture had already accumulated hooks, cron heartbeats,
+department lanes, approvals, skills, QMP, logs, and trust/depth governance, but
+the repo still needed a sharper statement of what all of that is for.
+**Options Considered:**
+- Keep the system framed primarily as a shared orchestration layer
+- Let proactivity remain an implied property of the runtime
+- State explicitly that `compound-brain` exists to turn LLMs into proactive,
+  memory-driven project operators
+**Reasoning:** The system is strongest when it does more than answer the last
+prompt. Hooks and cron heartbeats should wake the runtime, preload project
+memory, select the right department lane, recommend the next best bounded move,
+and act when evidence and approvals allow it. Making that principle explicit
+aligns the docs, project brain, and runtime contract around one credible goal.
+**Expected Outcome:** Public docs, repo strategy, and future implementation work
+all optimize for proactive recommendation and bounded execution from memory,
+while still avoiding hype about perfect certainty or unlimited autonomy.
+**Actual Outcome:** README, architecture docs, and the project record now carry
+this rule explicitly.
+**Rule established:** `compound-brain` should behave like a proactive,
+memory-driven project operator. It should recommend and execute the next best
+bounded moves from evidence, while strategic direction remains approval-gated
+and confidence remains evidence-weighted rather than absolute.
+
+---
+
 ## DEC-004 — Add pre-tool-use write guard for protected surfaces
 **Date:** 2026-03-22
 **Priority:** P1
