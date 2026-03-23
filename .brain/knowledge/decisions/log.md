@@ -397,3 +397,38 @@ logged to .brain/knowledge/areas/skill-health.md, and surfaced to the human.
 **Rule established:** Implement `pre_tool_use_write_guard.py` hook that reads
 `.claude/departments/*.md` Protected Surfaces sections and blocks writes to listed paths.
 Both Claude Code and Codex must be wired to this hook.
+
+---
+
+## DEC-016 — Activated repos should execute through mission packets, department shopping, and isolated autoresearch lanes
+**Date:** 2026-03-23
+**Priority:** P1
+**Context:** The runtime already had approvals, depth, arbitration, and
+bounded department cycles, but the remaining gaps were clear: department
+execution still behaved like a queue pop instead of a multi-department lane,
+skill matching still lacked strong department adaptation, and autoresearch did
+not yet isolate mutations from the main working tree.
+**Options Considered:**
+- Keep the existing bounded queue/runtime and rely on future refinements
+- Add a second orchestration layer just for deeper execution
+- Deepen the existing runtime with mission packets, department-aware skill
+  shopping, and worktree-isolated mutation lanes
+**Reasoning:** A second orchestrator would create control-plane drift. The
+stronger approach is to deepen the current shared runtime so Claude and Codex
+still wake into one repo brain, but each department now gets a concrete mission
+packet, supporting departments can enter queued handoff lanes, skill shopping
+stores match reasons/trust/freshness/adaptation in department state, and
+autoresearch can mutate and evaluate in a temporary worktree before copying
+only winning changes back.
+**Expected Outcome:** Activated repos feel more like a real multi-department
+operator: lead departments write staged missions, supporting departments are
+explicitly queued, skill adoption is repo-adapted instead of title-matched, and
+evaluator-backed experiments no longer dirty the main checkout during discard
+cycles.
+**Actual Outcome:** Implemented in `department_cycle.py`,
+`skill_inventory.py`, `run_project_llm_cron.py`, `project_runtime_event.py`,
+and `autoresearch_runner.py`, with regression coverage in dedicated tests.
+**Rule established:** Deeper autonomy should extend the existing shared
+runtime, not bypass it. Department execution must be mission-based, skill
+adoption must be department-aware, and mutation experiments must run in
+isolated lanes.

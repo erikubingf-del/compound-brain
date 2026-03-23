@@ -394,6 +394,9 @@ def run_project_runtime_event(project_dir: Path, event: str) -> dict[str, Any]:
                             current_depth=int(depth_state["current_depth"]),
                             lead_department=lead_department,
                             supporting_departments=supporting_departments,
+                            skill_state=skills,
+                            top_action=ranking["top_action"],
+                            goal=ranking["goal"],
                         )
                         summary = f"{summary}, arbitration={agreement['result']}"
                     runtime["cron_summary"] = summary

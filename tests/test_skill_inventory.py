@@ -14,6 +14,7 @@ class SkillInventoryTests(unittest.TestCase):
             repo.mkdir()
 
             (repo / ".brain" / "knowledge" / "skills" / "patterns").mkdir(parents=True)
+            (repo / ".brain" / "knowledge" / "departments").mkdir(parents=True)
             (repo / ".brain" / "state").mkdir(parents=True)
             (repo / ".brain" / "autoresearch").mkdir(parents=True)
             (repo / ".claude").mkdir(parents=True)
@@ -34,6 +35,16 @@ class SkillInventoryTests(unittest.TestCase):
             (repo / "README.md").write_text("# Demo Repo\n")
             (repo / "src").mkdir()
             (repo / "src" / "App.tsx").write_text("export default function App() { return null; }\n")
+            (repo / ".brain" / "knowledge" / "departments" / "engineering-sources.md").write_text(
+                "# Engineering Department Sources\n\n"
+                "## Objective\n"
+                "- Deliver polished frontend implementation.\n\n"
+                "## Approved Sources\n"
+                "- curated-ui-repos\n\n"
+                "## Search Queries\n"
+                "- frontend design system\n"
+                "- report export ui\n"
+            )
             (repo / "tests").mkdir()
             (repo / ".github" / "workflows").mkdir(parents=True)
             (repo / ".brain" / "autoresearch" / "program.md").write_text("# Program\n")
@@ -90,12 +101,25 @@ class SkillInventoryTests(unittest.TestCase):
                 {item["title"] for item in state["materialized"]},
                 {"Release Operations", "ui-master"},
             )
+            self.assertTrue(state["recommended"] or state["materialized"])
+            shopping = json.loads((repo / ".brain" / "state" / "departments" / "engineering-shopping.json").read_text())
+            self.assertTrue(shopping["candidate_skills"])
+            candidate = shopping["candidate_skills"][0]
+            self.assertIn("adaptation_notes", candidate)
+            self.assertIn("source_trust", candidate)
+            self.assertIn("freshness_days", candidate)
+            self.assertIn("match_reasons", candidate)
 
             saved_state = json.loads((repo / ".brain" / "state" / "skills.json").read_text())
             self.assertEqual(saved_state["repo"], "demo-repo")
+            self.assertTrue(saved_state["department_shopping"]["engineering"]["candidate_skills"])
             self.assertTrue(
                 (repo / ".brain" / "knowledge" / "skills" / "patterns" / "release-operations.md").exists()
             )
             self.assertTrue(
                 (repo / ".brain" / "knowledge" / "skills" / "patterns" / "ui-master.md").exists()
             )
+            materialized_pattern = (
+                repo / ".brain" / "knowledge" / "skills" / "patterns" / "ui-master.md"
+            ).read_text()
+            self.assertIn("## Repo Adaptation", materialized_pattern)

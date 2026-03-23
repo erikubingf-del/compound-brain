@@ -212,7 +212,7 @@ approval state and prints it in the activation output. That recommendation can:
 
 ## Department runtime
 
-Activated repos get a bounded department-cycle runtime:
+Activated repos get a staged department runtime:
 
 - `architecture`
 - `engineering`
@@ -225,6 +225,13 @@ Each department has:
 - memory in `.brain/knowledge/departments/`
 - an approved source pack in `.brain/knowledge/departments/<department>-sources.md`
 - a skill-shopping state file in `.brain/state/departments/<department>-shopping.json`
+- a mission packet in `.brain/state/departments/<department>-mission.json`
+
+Each lead department now writes a concrete mission lane:
+- analyze the action from repo memory, prior failures, and skills
+- stage the main execution class: `implement`, `research`, `document`, or `verify`
+- queue a verifier or handoff department when the lane needs it
+- persist follow-up work like product briefs or skill-shopping requests
 
 The runtime always gates before acting:
 - approvals first
@@ -290,9 +297,10 @@ runtime exceed the user’s declared ceiling.
 Every activated repo gets automatic skill discovery — no manual configuration.
 
 On session start and cron, the runtime reads the project's observable signals
-(file extensions, package dependencies, language markers) and scores every
-available skill against them. Skills match by their declared `Trigger Signals`,
-not by hardcoded repo names.
+(file extensions, package dependencies, language markers), department source
+packs, and current capability gaps. It then scores every available skill and
+stores department-specific shopping state with match reasons, source trust,
+freshness, and repo adaptation notes.
 
 ```
 session-start (any repo)
@@ -356,8 +364,11 @@ It runs from:
 - `.brain/autoresearch/queue.md`
 
 Without explicit approval and a valid program contract, it does not run.
-When enabled, repo cron now executes the evaluator, records baseline and result
-artifacts, and makes a bounded keep/discard decision from the configured rule.
+When enabled, repo cron now executes the evaluator in an isolated experiment
+lane. If the program defines a `Mutation Command`, the runtime creates a
+temporary worktree, runs the mutation there, checks changed files against
+`Mutable Surfaces`, evaluates there, and only copies the changes back into the
+repo when the metric improves.
 
 ## Self-hosting
 
@@ -394,12 +405,12 @@ Implemented in the current MVP branch:
 - `prepare-brain`
 - activation approvals
 - department contracts and state
-- bounded department-cycle runtime
+- staged department mission runtime with verifier handoffs
 - shared project runtime event engine for session start, stop, and cron autoimprovement
 - heartbeat ledger, lockfiles, retry backoff, and watchdog reporting for activated repos
-- repo-aware skill matching across local, global, and approved external skill sources
+- repo-aware skill matching across local, global, and approved external skill sources with department shopping state and repo adaptation
 - autonomy-depth policy, fail-closed context snapshots, runtime packets, cross-department arbitration, and trust-governed depth state with history
-- evaluator-backed autoresearch execution with keep/discard results
+- evaluator-backed autoresearch execution with keep/discard results and worktree-isolated mutation lanes
 - local skill promotion, global promotion inbox, scheduled review, and approved
   promotion application into canonical global knowledge
 - self-hosting evaluator surfaces plus scorecard automation
@@ -415,10 +426,10 @@ Implemented in the current MVP branch:
 | Repo preview cache | Stable | Read-only, no disk writes |
 | Static brain preparation | Stable | `.brain/` + `CLAUDE.md` |
 | Activation + approval gates | Stable | Goal/dept confirmation before writing |
-| Department runtime | MVP | Bounded queue handling; works, not rich |
+| Department runtime | Stable | Mission packets, staged execution, verifier handoffs |
 | Autonomy-depth governor | Stable | Auto-raise/lower with trust scoring |
 | Fixed-evaluator autoresearch | Stable | Approval-gated, keep/discard |
-| Skill discovery + materialization | Stable | Auto-detects by stack signals |
+| Skill discovery + materialization | Stable | Department-aware matching, shopping state, repo adaptation |
 | Generic skill-gap-detector | Stable | Session-start + cron, any repo type |
 | Skill-discovery-sources pack | Stable | Registries + stack-conditional refs |
 | Heartbeat + watchdog | Stable | Retry backoff, missed-heartbeat alerts |
@@ -427,8 +438,7 @@ Implemented in the current MVP branch:
 | Codex bootstrap | Stable | Shared control plane via same files |
 | Self-hosting evaluator | Stable | Locked contract + scorecard |
 | Community skill examples | Growing | 1 example (ui-master); more welcome |
-| Deeper department execution | Planned | Richer action logic per dept cycle |
-| Worktree-isolated mutations | Planned | Pattern described; no code yet |
+| Worktree-isolated mutations | Stable | Mutation command runs in temporary worktree lanes |
 | Full Codex execution parity | Partial | Bootstrap works; deep loops TBD |
 | Real-world case studies | Wanted | See `community/case-studies/TEMPLATE.md` |
 
@@ -437,6 +447,6 @@ Depths 4–5 (evaluator-backed experiments, high autonomy) require autoresearch
 enablement and a validated evaluator contract.
 
 Still evolving:
-- richer execution logic inside department cycles
-- worktree-isolated experiment mutations beyond bounded evaluator runs
 - richer promotion authoring from departments into global QMP/skills/decisions
+- broader external skill-source intelligence beyond the current approved-root model
+- more real-world case studies and benchmarks

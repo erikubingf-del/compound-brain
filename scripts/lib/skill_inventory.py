@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from fnmatch import fnmatch
 import json
 import os
 import re
@@ -85,6 +86,61 @@ def normalize_tokens(*parts: str) -> set[str]:
     for token in list(tokens):
         expanded.update(aliases.get(token, set()))
     return expanded
+
+
+def days_since(timestamp: float) -> int:
+    delta = datetime.now(timezone.utc).timestamp() - timestamp
+    return max(int(delta // 86400), 0)
+
+
+def parse_sectioned_markdown(path: Path) -> dict[str, list[str]]:
+    sections: dict[str, list[str]] = {}
+    current = "root"
+    sections[current] = []
+    for raw_line in path.read_text().splitlines():
+        stripped = raw_line.strip()
+        if stripped.startswith("## "):
+            current = stripped[3:].strip().lower()
+            sections.setdefault(current, [])
+            continue
+        sections.setdefault(current, []).append(raw_line.rstrip())
+    return sections
+
+
+def parse_department_source_pack(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return {
+            "objective": "",
+            "approved_sources": [],
+            "search_queries": [],
+            "validation_policy": [],
+            "anti_goals": [],
+        }
+    sections = parse_sectioned_markdown(path)
+
+    def list_items(name: str) -> list[str]:
+        values = []
+        for line in sections.get(name, []):
+            stripped = line.strip()
+            if stripped.startswith("- "):
+                values.append(stripped[2:].strip())
+        return values
+
+    return {
+        "objective": " ".join(list_items("objective")),
+        "approved_sources": list_items("approved sources"),
+        "search_queries": list_items("search queries"),
+        "validation_policy": list_items("validation policy"),
+        "anti_goals": list_items("anti-goals"),
+    }
+
+
+def load_department_source_packs(project_dir: Path, departments: list[str]) -> dict[str, dict[str, Any]]:
+    knowledge_dir = project_dir / ".brain" / "knowledge" / "departments"
+    return {
+        department: parse_department_source_pack(knowledge_dir / f"{department}-sources.md")
+        for department in departments
+    }
 
 
 def enabled_departments(project_dir: Path) -> list[str]:
@@ -247,6 +303,9 @@ def parse_skill_graph(skills_dir: Path, source: str) -> list[dict[str, Any]]:
                 "source": source,
                 "source_path": str(pattern_path if pattern_path.exists() else graph_path),
                 "pattern_body": pattern_body,
+                "freshness_days": days_since(
+                    (pattern_path if pattern_path.exists() else graph_path).stat().st_mtime
+                ),
                 "tokens": sorted(
                     normalize_tokens(current_title, description, next_improvements, " ".join(current_lines))
                 ),
@@ -313,21 +372,61 @@ def parse_external_skills(roots: list[Path]) -> list[dict[str, Any]]:
                     "source": "external",
                     "source_path": str(path),
                     "pattern_body": path.read_text(),
+                    "freshness_days": days_since(path.stat().st_mtime),
                     "tokens": sorted(normalize_tokens(title, description, str(path.parent.name))),
                 }
             )
     return skills
 
 
-def score_skill(capability: dict[str, Any], skill: dict[str, Any]) -> int:
+def source_trust(skill: dict[str, Any]) -> float:
+    source = str(skill.get("source", "external"))
+    if source == "repo":
+        return 1.0
+    if source == "global":
+        return 0.9
+    return 0.75
+
+
+def source_pack_tokens(source_pack: dict[str, Any]) -> set[str]:
+    return normalize_tokens(
+        source_pack.get("objective", ""),
+        " ".join(source_pack.get("approved_sources", [])),
+        " ".join(source_pack.get("search_queries", [])),
+    )
+
+
+def score_skill(
+    capability: dict[str, Any],
+    skill: dict[str, Any],
+    source_pack: dict[str, Any] | None = None,
+) -> tuple[int, list[str]]:
     capability_tokens = set(capability["keywords"])
     skill_tokens = set(skill["tokens"])
-    score = len(capability_tokens & skill_tokens)
+    source_pack = source_pack or {}
+    query_tokens = source_pack_tokens(source_pack)
+
+    overlap = capability_tokens & skill_tokens
+    score = len(overlap)
+    reasons = []
+    if overlap:
+        reasons.append(f"capability overlap: {', '.join(sorted(overlap)[:4])}")
     if capability["department"] in skill_tokens:
         score += 1
+        reasons.append(f"department match: {capability['department']}")
     if capability["id"] == skill["slug"]:
         score += 2
-    return score
+        reasons.append("exact capability slug match")
+    query_overlap = query_tokens & skill_tokens
+    if query_overlap:
+        score += min(len(query_overlap), 2)
+        reasons.append(f"source-pack overlap: {', '.join(sorted(query_overlap)[:4])}")
+    freshness_days = int(skill.get("freshness_days", 9999))
+    if freshness_days <= 30:
+        reasons.append("recent skill evidence")
+    if source_trust(skill) >= 0.9:
+        reasons.append("trusted source")
+    return score, reasons
 
 
 EXTERNAL_TITLE_HINTS = {
@@ -353,25 +452,36 @@ def external_match_allowed(capability: dict[str, Any], skill: dict[str, Any]) ->
 def match_capability(
     capability: dict[str, Any],
     skills: list[dict[str, Any]],
+    source_pack: dict[str, Any] | None = None,
     exclude_slugs: set[str] | None = None,
 ) -> dict[str, Any] | None:
     exclude_slugs = exclude_slugs or set()
-    ranked: list[tuple[int, dict[str, Any]]] = []
+    ranked: list[tuple[int, dict[str, Any], list[str]]] = []
     for skill in skills:
         if skill["slug"] in exclude_slugs:
             continue
         if not external_match_allowed(capability, skill):
             continue
-        score = score_skill(capability, skill)
+        score, reasons = score_skill(capability, skill, source_pack=source_pack)
         if score <= 0:
             continue
-        ranked.append((score, skill))
+        ranked.append((score, skill, reasons))
     if not ranked:
         return None
-    ranked.sort(key=lambda item: (item[0], item[1]["title"]), reverse=True)
-    score, skill = ranked[0]
+    ranked.sort(key=lambda item: (item[0], source_trust(item[1]), item[1]["title"]), reverse=True)
+    score, skill, reasons = ranked[0]
+    adaptation_notes = [
+        f"Adapt `{skill['title']}` to the `{capability['department']}` department in `{capability['title']}`.",
+    ]
+    if source_pack:
+        if source_pack.get("objective"):
+            adaptation_notes.append(f"Department objective: {source_pack['objective']}")
+        queries = source_pack.get("search_queries", [])
+        if queries:
+            adaptation_notes.append(f"Search focus: {', '.join(queries[:2])}")
     return {
         "capability": capability["title"],
+        "department": capability["department"],
         "score": score,
         "title": skill["title"],
         "slug": skill["slug"],
@@ -380,6 +490,10 @@ def match_capability(
         "source_path": skill["source_path"],
         "pattern_body": skill["pattern_body"],
         "next_improvements": skill["next_improvements"],
+        "freshness_days": int(skill.get("freshness_days", 9999)),
+        "source_trust": source_trust(skill),
+        "match_reasons": reasons,
+        "adaptation_notes": adaptation_notes,
     }
 
 
@@ -405,7 +519,7 @@ def classify_local_skills(
             (
                 {
                     "capability": capability["title"],
-                    "score": score_skill(capability, skill),
+                    "score": score_skill(capability, skill)[0],
                 }
                 for capability in capabilities
             ),
@@ -428,11 +542,18 @@ def classify_local_skills(
     return active, stale
 
 
-def build_pattern_body(skill: dict[str, Any], capability: dict[str, Any]) -> str:
+def build_pattern_body(
+    project_dir: Path,
+    skill: dict[str, Any],
+    capability: dict[str, Any],
+    source_pack: dict[str, Any] | None = None,
+) -> str:
     if skill["source"] == "global" and skill.get("pattern_body"):
         body = skill["pattern_body"].rstrip() + "\n"
     else:
         body = f"# {skill['title']}\n\n{skill['description']}\n"
+    source_pack = source_pack or {}
+    search_queries = source_pack.get("search_queries", [])
     return (
         body.rstrip()
         + "\n\n## Compound-Brain Match\n"
@@ -440,6 +561,16 @@ def build_pattern_body(skill: dict[str, Any], capability: dict[str, Any]) -> str
         + f"- Source Path: `{skill['source_path']}`\n"
         + f"- Capability: {capability['title']}\n"
         + f"- Reason: {capability['reason']}\n"
+        + f"- Department: {capability['department']}\n"
+        + "\n## Repo Adaptation\n"
+        + f"- Repo: `{project_dir.name}`\n"
+        + f"- Department objective: {source_pack.get('objective', 'Pending department objective.')}\n"
+        + (
+            f"- Search queries: {', '.join(search_queries[:2])}\n"
+            if search_queries
+            else "- Search queries: none captured\n"
+        )
+        + f"- Adaptation notes: {' | '.join(skill.get('adaptation_notes', []))}\n"
         + "\n"
     )
 
@@ -448,6 +579,7 @@ def materialize_recommendations(
     project_dir: Path,
     recommendations: list[dict[str, Any]],
     capabilities_by_title: dict[str, dict[str, Any]],
+    source_packs: dict[str, dict[str, Any]],
     limit: int = 2,
 ) -> list[dict[str, Any]]:
     ranked_recommendations = sorted(
@@ -475,13 +607,20 @@ def materialize_recommendations(
             related_projects=[project_dir.name],
             key_knowledge=recommendation["description"],
             next_improvements=recommendation["next_improvements"],
-            pattern_body=build_pattern_body(recommendation, capability),
+            pattern_body=build_pattern_body(
+                project_dir,
+                recommendation,
+                capability,
+                source_pack=source_packs.get(capability["department"], {}),
+            ),
         )
         materialized.append(
             {
                 "title": recommendation["title"],
                 "source": recommendation["source"],
                 "capability": recommendation["capability"],
+                "department": capability["department"],
+                "adaptation_notes": recommendation["adaptation_notes"],
             }
         )
         seen_titles.add(recommendation["title"])
@@ -496,6 +635,17 @@ def write_skill_state(project_dir: Path, payload: dict[str, Any]) -> None:
     state_path.write_text(json.dumps(payload, indent=2) + "\n")
 
 
+def write_department_shopping_state(
+    project_dir: Path,
+    department_shopping: dict[str, dict[str, Any]],
+) -> None:
+    state_dir = project_dir / ".brain" / "state" / "departments"
+    state_dir.mkdir(parents=True, exist_ok=True)
+    for department, payload in department_shopping.items():
+        path = state_dir / f"{department}-shopping.json"
+        path.write_text(json.dumps(payload, indent=2) + "\n")
+
+
 def refresh_repo_skill_state(
     project_dir: Path,
     claude_home: Path | None = None,
@@ -507,6 +657,8 @@ def refresh_repo_skill_state(
 
     departments = enabled_departments(project_dir)
     capabilities = infer_required_capabilities(project_dir, departments)
+    all_departments = sorted(set(departments) | {item["department"] for item in capabilities})
+    source_packs = load_department_source_packs(project_dir, all_departments)
     local_skills, global_skills, external_skills = load_local_global_external_skills(
         project_dir,
         claude_home,
@@ -518,28 +670,51 @@ def refresh_repo_skill_state(
     recommendations: list[dict[str, Any]] = []
     missing: list[dict[str, Any]] = []
     capabilities_by_title = {item["title"]: item for item in capabilities}
+    department_shopping = {
+        department: {
+            "department": department,
+            "reviewed_at": now_utc(),
+            "missing_capabilities": [],
+            "candidate_skills": [],
+            "adopted_skills": [],
+            "rejected_candidates": [],
+            "source_pack": source_packs.get(department, {}),
+            "next_review_at": None,
+        }
+        for department in all_departments
+    }
 
     global_external = global_skills + external_skills
     for capability in capabilities:
+        department = capability["department"]
         if capability["title"] in {cap for item in active for cap in item["matched_capabilities"]}:
             continue
         match = match_capability(
             capability,
             global_external,
+            source_pack=source_packs.get(department, {}),
             exclude_slugs={slugify(title) for title in active_titles},
         )
         if match and match["score"] >= 2:
             recommendations.append(match)
+            if department in department_shopping:
+                department_shopping[department]["candidate_skills"].append(match)
             continue
-        missing.append(
-            {
-                "title": capability["title"],
-                "department": capability["department"],
-                "reason": capability["reason"],
-            }
-        )
+        missing_item = {
+            "title": capability["title"],
+            "department": department,
+            "reason": capability["reason"],
+        }
+        missing.append(missing_item)
+        if department in department_shopping:
+            department_shopping[department]["missing_capabilities"].append(missing_item)
 
-    materialized = materialize_recommendations(project_dir, recommendations, capabilities_by_title)
+    materialized = materialize_recommendations(
+        project_dir,
+        recommendations,
+        capabilities_by_title,
+        source_packs=source_packs,
+    )
     if materialized:
         local_skills, _, _ = load_local_global_external_skills(
             project_dir,
@@ -551,11 +726,20 @@ def refresh_repo_skill_state(
         recommendations = [
             item for item in recommendations if item["title"] not in materialized_titles
         ]
+        for item in materialized:
+            department_shopping[item["department"]]["adopted_skills"].append(item)
+
+    for department, payload in department_shopping.items():
+        payload["candidate_skills"] = sorted(
+            payload["candidate_skills"],
+            key=lambda item: (item["score"], item["source_trust"], -item["freshness_days"]),
+            reverse=True,
+        )[:5]
 
     payload = {
         "generated_at": now_utc(),
         "repo": project_dir.name,
-        "departments": departments,
+        "departments": all_departments,
         "required_capabilities": capabilities,
         "active": active,
         "recommended": [
@@ -565,17 +749,24 @@ def refresh_repo_skill_state(
                 "source": item["source"],
                 "score": item["score"],
                 "source_path": item["source_path"],
+                "department": item["department"],
+                "source_trust": item["source_trust"],
+                "freshness_days": item["freshness_days"],
+                "match_reasons": item["match_reasons"],
+                "adaptation_notes": item["adaptation_notes"],
             }
             for item in recommendations
         ],
         "materialized": materialized,
         "stale": stale,
         "missing": missing,
+        "department_shopping": department_shopping,
         "inventory_counts": {
             "repo": len(local_skills),
             "global": len(global_skills),
             "external": len(external_skills),
         },
     }
+    write_department_shopping_state(project_dir, department_shopping)
     write_skill_state(project_dir, payload)
     return payload

@@ -61,6 +61,9 @@ def run_project_cron(
     current_depth: int | None = None,
     lead_department: str | None = None,
     supporting_departments: list[str] | None = None,
+    skill_state: dict[str, object] | None = None,
+    top_action: str | None = None,
+    goal: str | None = None,
 ) -> tuple[str, int]:
     departments = enabled_departments(project_dir)
     if not departments:
@@ -69,8 +72,7 @@ def run_project_cron(
     if dry_run:
         return (f"[dry-run] {', '.join(departments)}", 0)
 
-    skill_state: dict[str, object] | None = None
-    if refresh_skills:
+    if refresh_skills or skill_state is None:
         skill_state = refresh_repo_skill_state(project_dir, claude_home=claude_home_dir())
 
     if current_depth is not None and current_depth <= 2:
@@ -86,7 +88,33 @@ def run_project_cron(
             if item in departments and item not in selected_departments:
                 selected_departments.append(item)
 
-    results = [run_department_cycle(project_dir, department) for department in selected_departments]
+    results: list[dict[str, object]] = []
+    if selected_departments:
+        primary_department = selected_departments[0]
+        support = selected_departments[1:]
+        primary_result = run_department_cycle(
+            project_dir,
+            primary_department,
+            current_depth=current_depth or 3,
+            goal=goal or "",
+            top_action=top_action,
+            supporting_departments=support,
+            skill_state=skill_state or {"active": [], "missing": []},
+        )
+        results.append(primary_result)
+        for department in primary_result.get("handoff_departments", []):
+            if department in support:
+                results.append(
+                    run_department_cycle(
+                        project_dir,
+                        str(department),
+                        current_depth=current_depth or 3,
+                        goal=goal or "",
+                        top_action=f"Verify handoff for {primary_result['action']}",
+                        supporting_departments=[],
+                        skill_state=skill_state or {"active": [], "missing": []},
+                    )
+                )
     autoresearch_program = project_dir / ".brain" / "autoresearch" / "program.md"
     if autoresearch_program.exists() and (current_depth is None or current_depth >= 4):
         research_department = "research" if "research" in selected_departments else selected_departments[0]

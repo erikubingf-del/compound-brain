@@ -70,6 +70,11 @@ Out of scope for v1:
   missing capabilities from stack and departments, searches repo-local and
   global skills first, optionally searches approved external skill roots, and
   tracks active, stale, recommended, and missing skills in `.brain/state/skills.json`
+- The latest runtime tranche deepens that loop: department cycles now write
+  mission packets with staged analyze/execute/verify lanes, supporting
+  departments can be queued as verifier handoffs, and per-department shopping
+  state now stores candidate skills with trust, freshness, match reasons, and
+  repo adaptation notes
 - The activation/runtime branch now adds an autonomy-depth governor with global
   `~/.claude/policy/` seeds, repo-local depth/governor/packet/context files,
   fail-closed preload checks, and depth-aware cron behavior
@@ -89,6 +94,10 @@ Out of scope for v1:
   eligible cron work can generate a one-story PRD, run one Ralph iteration,
   and record `.brain/state/ralph-state.json` instead of always using the
   default bounded cron executor
+- Autoresearch now supports an isolated mutation lane: if a program defines a
+  `Mutation Command`, the runtime creates a temporary worktree, runs the
+  mutation and evaluator there, enforces mutable surfaces, and only copies
+  winning changes back into the repo
 - The repo now also exposes bounded community contribution lanes under
   `community/` plus GitHub issue and PR templates so users can contribute
   skills, department packs, source packs, evaluators, case studies,
@@ -109,6 +118,7 @@ Out of scope for v1:
 - Global promotion inbox for cross-project learnings
 - Self-hosted orchestrator evaluation for `compound-brain`
 - Repo-aware skill discovery and materialization for activated repos
+- Mission-packet department execution with verifier handoffs
 - Policy-driven autonomy depth with trust-governed execution lanes
 - Cross-department agreement as a first-class runtime gate
 - Ralph as an automatic outer loop for eligible self-hosting cron work
@@ -141,21 +151,14 @@ Out of scope for v1:
   criteria if evaluator changes are not approval-gated
 
 ## Next Actions
-- Extend department cycles from gated queue handling into richer execution and
-  evaluator-aware actions
-- Add worktree-isolated experiment mutation around the evaluator-backed
-  autoresearch loop
 - Improve department-authored global promotion candidates with richer QMP and
   decision payloads
 - Tighten self-hosting evaluator coverage beyond the current deterministic
   gates, rubric checks, and smoke canary
 - Decide whether self-hosting Ralph lanes should stay Codex-first or become
   policy-selectable by default agent
-- Improve the skill-matching heuristics beyond the current conservative
-  title-and-capability filters so repo recommendations stay high-signal as the
-  approved external skill inventory grows
-- Deepen department execution once the new arbitration and trust-history gates
-  have stabilized under more realistic project workloads
+- Broaden skill-source intelligence beyond the current approved-root and
+  source-pack model so department shopping can learn from a wider external set
 - Turn the new proactive-operator principle into public proof through
   benchmarks, case studies, and explicit credibility docs
 - Seed the new community lanes with exemplar contributions for `frontend`,

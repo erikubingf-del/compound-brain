@@ -82,12 +82,15 @@ Each department has:
 - contract: `.claude/departments/<department>.md`
 - state: `.brain/state/departments/<department>.json`
 - memory: `.brain/knowledge/departments/<department>.md`
+- mission packet: `.brain/state/departments/<department>-mission.json`
 
 Cycle shape:
 - load context
 - check approval
-- choose one bounded action
-- log result
+- build one mission packet
+- stage analyze -> execute -> verify
+- hand off to the right supporting department when needed
+- log result and follow-up actions
 - stop or escalate
 
 Operator expectation:
@@ -111,6 +114,7 @@ Hook and cron wiring:
 - `project_stop.py` dispatches to the shared runtime event engine
 - `project_llm_cron.py` dispatches to the shared runtime event engine
 - the shared engine refreshes audits, intelligence briefs, ranked actions, and bounded runtime cycles
+- cron can now carry a lead mission into verifier handoff state instead of treating every pass as a flat queue pop
 
 Heartbeat expectation:
 - hooks wake the runtime on session boundaries
@@ -172,6 +176,11 @@ Files:
 - `.brain/autoresearch/results.jsonl`
 - `.brain/autoresearch/queue.md`
 
+If `program.md` includes a `Mutation Command`, the runtime creates a temporary
+worktree lane, runs the mutation there, enforces `Mutable Surfaces`, evaluates
+the candidate there, and only copies changes back into the repo when the
+keep/discard rule says to keep them.
+
 ## Learning model
 
 Project-local skill promotion:
@@ -184,6 +193,7 @@ Repo skill discovery flow:
 - match repo-local skills first
 - match global shared skills second
 - match approved external skill roots last
+- score candidates with department source-pack context, trust, freshness, and adaptation notes
 - materialize best-fit skills into the repo brain when the match is strong enough
 - keep explicit active, stale, recommended, and missing skill state per repo
 

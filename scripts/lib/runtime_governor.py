@@ -85,7 +85,7 @@ def department_health_score(repo: Path) -> tuple[float, dict[str, list[str]]]:
         total += 1
         status = payload.get("status")
         confidence = float(payload.get("confidence_score", 0.0))
-        if status in {"ready", "ok", "idle"}:
+        if status in {"ready", "ok", "idle", "queued", "consulted"}:
             healthy.append(path.stem)
         if status in {"blocked", "failed"}:
             blocked.append(path.stem)
