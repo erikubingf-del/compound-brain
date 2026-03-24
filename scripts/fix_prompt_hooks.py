@@ -35,6 +35,10 @@ def _backup(path: Path) -> Path:
     return backup
 
 
+_UNSUPPRESSED_STOP = "python3 .claude/hooks/project_stop.py"
+_SUPPRESSED_STOP   = "python3 .claude/hooks/project_stop.py > /dev/null 2>&1"
+
+
 def _has_prompt_stop_hook(settings: dict) -> bool:
     for group in settings.get("hooks", {}).get("Stop", []):
         for hook in group.get("hooks", []):
@@ -43,17 +47,31 @@ def _has_prompt_stop_hook(settings: dict) -> bool:
     return False
 
 
+def _has_unsuppressed_stop(settings: dict) -> bool:
+    for group in settings.get("hooks", {}).get("Stop", []):
+        for hook in group.get("hooks", []):
+            if hook.get("command", "").strip() == _UNSUPPRESSED_STOP:
+                return True
+    return False
+
+
 def _remove_prompt_stop_hooks(settings: dict) -> tuple[dict, int]:
-    """Return cleaned settings and count of removed hooks."""
+    """Remove prompt-type Stop hooks and fix unsuppressed project_stop.py commands."""
     removed = 0
     stop_groups = settings.get("hooks", {}).get("Stop", [])
     new_stop_groups = []
     for group in stop_groups:
-        clean_hooks = [h for h in group.get("hooks", []) if h.get("type") != "prompt"]
-        removed += len(group.get("hooks", [])) - len(clean_hooks)
-        if clean_hooks:
-            new_stop_groups.append({**group, "hooks": clean_hooks})
-        # drop the group entirely if it's now empty
+        new_hooks = []
+        for h in group.get("hooks", []):
+            if h.get("type") == "prompt":
+                removed += 1
+                continue
+            # Fix unsuppressed project_stop.py output
+            if h.get("command", "").strip() == _UNSUPPRESSED_STOP:
+                h = {**h, "command": _SUPPRESSED_STOP}
+            new_hooks.append(h)
+        if new_hooks:
+            new_stop_groups.append({**group, "hooks": new_hooks})
     if "hooks" in settings and "Stop" in settings["hooks"]:
         if new_stop_groups:
             settings["hooks"]["Stop"] = new_stop_groups
@@ -73,7 +91,7 @@ def fix_settings_file(path: Path, label: str) -> bool:
         print(f"  ! could not parse {label}: {e}")
         return False
 
-    if not _has_prompt_stop_hook(settings):
+    if not _has_prompt_stop_hook(settings) and not _has_unsuppressed_stop(settings):
         return False
 
     backup = _backup(path)

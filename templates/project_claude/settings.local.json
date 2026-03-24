@@ -15,7 +15,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .claude/hooks/project_stop.py"
+            "command": "python3 .claude/hooks/project_stop.py > /dev/null 2>&1"
           }
         ]
       }
