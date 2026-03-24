@@ -122,6 +122,14 @@ Hook and cron wiring:
 - the shared engine refreshes audits, intelligence briefs, ranked actions, and bounded runtime cycles
 - cron can now carry a lead mission into verifier handoff state instead of treating every pass as a flat queue pop
 
+Skill radar hook (`skill_radar_hook.py`):
+- runs at every `SessionStart`, after `project_runtime_event.py` has refreshed `skills.json`
+- checks the age of `~/.claude/knowledge/resources/skill-catalog.json`
+- if the catalog is stale (> 12h), fires `skill_radar_refresh.py` asynchronously in the background — does not delay session start
+- reads `.brain/state/skills.json` and surfaces any new recommended skills to Claude visibly, with match reason and department
+- reads `~/.claude/knowledge/resources/project-tip-catalog.json` and surfaces high-confidence tips from other activated repos
+- this ensures Claude sees skill radar results on every session, not just when cron happens to run before the session
+
 Heartbeat expectation:
 - hooks wake the runtime on session boundaries
 - cron provides recurring heartbeats between sessions

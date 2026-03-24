@@ -174,6 +174,8 @@ SCRIPTS=(
   "review_promotion_inbox.py"
   "run_project_llm_cron.py"
   "skill_radar_refresh.py"
+  "skill_radar_hook.py"
+  "fix_prompt_hooks.py"
   "update_architecture_scorecard.py"
   "github_intelligence.py"
   "setup_brain.sh"
@@ -395,6 +397,12 @@ if [[ ! -f "$SETTINGS_FILE" ]]; then
             "command": "${PYTHON_BIN} \"${SCRIPTS_DIR}/project_runtime_event.py\" --event session-start --project-dir . 2>/dev/null",
             "timeout": 8,
             "statusMessage": "Refreshing project runtime..."
+          },
+          {
+            "type": "command",
+            "command": "${PYTHON_BIN} \"${SCRIPTS_DIR}/skill_radar_hook.py\" 2>/dev/null",
+            "timeout": 5,
+            "statusMessage": "Checking skill radar..."
           }
         ]
       }
@@ -402,11 +410,6 @@ if [[ ! -f "$SETTINGS_FILE" ]]; then
     "Stop": [
       {
         "hooks": [
-          {
-            "type": "prompt",
-            "prompt": "Before this session ends, check if you have written the session's high-signal work to the knowledge base. If a .brain/ directory exists in the current working directory, you MUST: (1) append today's meaningful decisions, changes, and next actions to .brain/knowledge/daily/YYYY-MM-DD.md (use today's actual date), (2) update .brain/knowledge/projects/<project>.md if project state changed. If no .brain/ exists, write to ~/.claude/knowledge/daily/YYYY-MM-DD.md instead. Only skip if the session had no meaningful technical work (e.g. only questions answered). Do this now using the Write or Edit tool.",
-            "timeout": 30
-          },
           {
             "type": "command",
             "command": "bash \"${SCRIPTS_DIR}/nightly_review.sh\" 2>/dev/null",
@@ -427,8 +430,18 @@ EOF
   fi
 else
   warn "settings.json already exists — add these hooks manually or check docs/HOOKS_GUIDE.md"
-  warn "Hook to add to SessionStart:"
+  warn "Hooks to add to SessionStart (in order, after project_runtime_event):"
   echo "    {\"type\":\"command\",\"command\":\"${PYTHON_BIN} ${HOOK_SCRIPT} 2>/dev/null\",\"timeout\":3}"
+  echo "    {\"type\":\"command\",\"command\":\"${PYTHON_BIN} ${SCRIPTS_DIR}/skill_radar_hook.py 2>/dev/null\",\"timeout\":5,\"statusMessage\":\"Checking skill radar...\"}"
+fi
+
+# ─── Migrate: remove prompt-type Stop hooks (affects all installs) ───────────
+echo ""
+echo "      Checking for invalid prompt-type Stop hooks..."
+if $DRY_RUN; then
+  echo "  [dry-run] ${PYTHON_BIN} ${SCRIPTS_DIR}/fix_prompt_hooks.py"
+else
+  "${PYTHON_BIN}" "${SCRIPTS_DIR}/fix_prompt_hooks.py"
 fi
 
 echo ""

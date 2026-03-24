@@ -213,6 +213,93 @@ mkdir ~/.claude/skills/my-skill
 
 ---
 
+## A day in the life of an activated repo
+
+Once your repo is activated, this is the full loop that runs without you:
+
+```
+MORNING — session open
+────────────────────────────────────────────────
+SessionStart hook fires
+  → project_session_start.py dispatches session-start event
+  → runtime reads .brain/state/ (depth, trust, approvals, skills, dept state)
+  → skill-gap-detector runs (10s, file scan only)
+    → new skill match → added to recommended[], you get notified
+  → probability engine ranks the action queue
+    → P1: bug-fix (0.87)  P2: test-coverage (0.71)  P3: refactor (0.44)
+  → lead department determined from top action (Engineering for P1)
+  → operator brief written to .brain/state/operator-recommendation.json:
+      lead: engineering
+      action: fix null-check in payments module
+      trust: 74  depth: 3  blocked: none
+      recommended move: bounded execution, one action, verify after
+
+Claude wakes and reads the brief instead of starting from scratch.
+You see: what matters now, which dept is active, what is blocked, what to do next.
+
+DURING THE SESSION
+────────────────────────────────────────────────
+Engineering dept leads the P1 action
+  → checks its contract: .claude/departments/engineering.md
+  → checks approval-state.json — no strategic gate blocking this
+  → proposes action to department-agreement.json
+  → Architecture reviews: is this a control-plane change? no → agrees
+  → Action executes (one bounded step)
+  → Result logged to .brain/knowledge/daily/YYYY-MM-DD.md
+
+If a reusable pattern emerged:
+  → QMP entry added to .brain/knowledge/qmp/
+  → .brain/knowledge/skills/skill-graph.md updated if capability changed
+  → .brain/knowledge/decisions/log.md updated if strategic choice was made
+
+SESSION END
+────────────────────────────────────────────────
+Stop hook fires
+  → project_stop.py dispatches stop event
+  → session compressed: daily note updated, project state updated
+  → trust score recalculated from: approvals, healthy streak,
+    dept agreement rate, skill coverage, heartbeat health
+  → depth governor checks thresholds:
+      trust 74 → stays at depth 3 (raise threshold is 75)
+      one more clean session → depth rises to 4
+
+BETWEEN SESSIONS — cron heartbeat
+────────────────────────────────────────────────
+project_llm_cron.py fires (configured interval, default daily)
+  → at depth 2: planning only — refreshes audit, updates brief, no execution
+  → at depth 3: bounded department cycle — Engineering runs P1 if not done
+  → at depth 4+: evaluator-backed autoresearch may run if program.md exists
+
+Global skill radar cron fires (weekly)
+  → searches approved GitHub patterns by dept + capability
+  → extracts project tips from activated repos
+  → writes ~/.claude/knowledge/resources/skill-catalog.json
+  → next session-start surfaces relevant new skills to your repo
+
+Global promotion review fires (scheduled)
+  → reads ~/.claude/knowledge/promotions/inbox.md
+  → reviews cross-project candidates
+  → approved patterns written into ~/.claude/knowledge/ for all repos
+
+AFTER A WEEK
+────────────────────────────────────────────────
+.brain/knowledge/decisions/log.md  — every strategic choice recorded
+.brain/knowledge/daily/            — full session trail
+.brain/knowledge/skills/           — capability map for this repo
+.brain/state/autonomy-depth.json   — depth and trust score trend
+~/.claude/knowledge/               — patterns that transferred across repos
+
+The repo knows its own history. The next session starts from evidence,
+not from a blank context.
+```
+
+**The key invariant:** every session leaves `.brain/` more useful than before.
+Hooks handle session boundaries. Cron keeps the repo moving between them.
+The probability engine decides what to do next. Departments govern who can do it.
+Memory makes every session faster than the last.
+
+---
+
 ## Common operations
 
 | Goal | Command |
