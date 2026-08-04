@@ -28,6 +28,15 @@ If only Guard B passes, write to the local `~/.claude/` tree instead and note th
 Read `.brain/AGENTS.md` (cross-run learnings) and `.brain/queue.md` (pending tasks).
 Read the last 4 digests in `.brain/knowledge/research/` to avoid duplicating prior findings.
 
+Claim your row in `.brain/queue.md` (Status → in_progress, Claimed By →
+weekly-digest) before starting, and mark it done in Step 5. If an unclaimed
+higher-priority item sits in the queue and falls inside the SAFE allowlist,
+handle it in this run.
+
+If `.brain/knowledge/research/` is empty or missing, that is a signal the
+previous run failed to push — note it in the digest rather than treating the
+absence of prior digests as "nothing was ever found".
+
 ---
 
 ## Step 1: Scan Sources (12–15 candidates)
@@ -106,4 +115,42 @@ ADOPT items only. For each:
 1. Append 1–3 lines of learnings to `.brain/AGENTS.md`.
 2. Update `.brain/queue.md`: mark completed items done, add any new tasks surfaced.
 3. If any SAFE AUTO-APPLY items exist, apply them now (markdown writes/appends only).
-4. List anything requiring approval — one line each — at the end of the digest.
+4. Update the `outcome` field on prior digests' ADOPT items (pending → confirmed/invalidated).
+5. List anything requiring approval — one line each — at the end of the digest.
+
+---
+
+## Step 6: Commit and push — REQUIRED, the run is not done without it
+
+Nothing written in Steps 4–5 survives unless it is pushed. A cloud container
+is discarded when the session ends, so a run that writes a digest and stops
+has produced nothing and will silently re-report the same findings next week.
+Do not skip this step, and do not end the run reporting success without it.
+
+1. **Leak gate (this repo is PUBLIC).** Before staging, scan for project,
+   service, host, and strategy names:
+   ```
+   git diff -- .brain/ | grep -niE "<names from the private stored prompt>"
+   ```
+   If anything matches, remove it and re-scan. Never push a name into public
+   git history — a later scrub does not remove it from history.
+
+2. **Stage only `.brain/`.** Nothing outside it:
+   ```
+   git add -A .brain/
+   ```
+
+3. **Commit** as `brain: weekly digest YYYY-MM-DD` (today's date).
+
+4. **Push to the default branch** (`main`):
+   ```
+   git push -u origin main
+   ```
+   On network failure only, retry up to 4 times with backoff (2s, 4s, 8s, 16s).
+   A 403 is not a network failure — it means this session lacks push rights;
+   report that plainly rather than retrying.
+
+5. **Verify the loop closed:** working tree clean and local `main` equal to
+   `origin/main`. If they differ, the run has NOT persisted — say so.
+
+If nothing changed, push nothing and say so.
