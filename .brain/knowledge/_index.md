@@ -12,7 +12,8 @@ _Last updated: 2026-08-04_
 
 ## Skills
 - [skill-graph.md](skills/skill-graph.md) — Project skill map
-- [validate-digest.md](skills/validate-digest.md) — Typed-contract validator for weekly digests
+- [validate-digest.md](skills/validate-digest.md) — Contract notes; the loadable skill is `.claude/skills/validate-digest/`
+- **Loadable skills live in `.claude/skills/`** — `brain-orient`, `brain-write`, `brain-digest`, `validate-digest`. Claude Code auto-loads these in any session in this repo.
 
 ## QMP
 - [_index.md](qmp/_index.md) — Project QMP library

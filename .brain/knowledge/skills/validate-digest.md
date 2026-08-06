@@ -1,5 +1,11 @@
 # Skill: validate-digest
 
+> The loadable version of this skill now lives at
+> `.claude/skills/validate-digest/SKILL.md`, where Claude Code auto-loads it.
+> This file is kept as the contract's design notes. When the two disagree,
+> the `.claude/skills/` copy is what actually runs.
+
+
 Typed-contract validator for weekly LLM architecture digests. Run after writing any digest, before committing. A digest that fails validation must be fixed in the same run — never commit a failing digest.
 
 ## Contract (schema v1.0)

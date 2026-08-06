@@ -1,5 +1,19 @@
 # compound-brain — Skill Graph
-_Last updated: 
+_Last updated: 2026-08-04_
+
+## Loadable project skills (`.claude/skills/`)
+
+These are real skills Claude Code auto-loads in any session in this repo —
+not notes about skills. Entries below this block are capability notes.
+
+| Skill | Purpose |
+|---|---|
+| [brain-orient](../../../.claude/skills/brain-orient/SKILL.md) | Read AGENTS.md, queue, and recent digests before acting; report pending and stale state |
+| [brain-write](../../../.claude/skills/brain-write/SKILL.md) | Route a fact/decision/pattern to its correct home in `.brain/`; scrub, dedup, index |
+| [brain-digest](../../../.claude/skills/brain-digest/SKILL.md) | Run the weekly research digest: scan, verify against official docs, write, self-apply SAFE, push |
+| [validate-digest](../../../.claude/skills/validate-digest/SKILL.md) | Check a digest against its typed contract before commit |
+
+
 
 ## _(Add skills as they are used and improved)_
 
