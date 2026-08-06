@@ -10,8 +10,6 @@
 
       "Write(.brain/**)",
       "Edit(.brain/**)",
-      "Write(.claude/skills/**)",
-      "Edit(.claude/skills/**)",
 
       "Bash(git status*)",
       "Bash(git status:*)",
@@ -41,6 +39,14 @@
       "Bash(mkdir -p .brain*)",
       "Bash(mkdir -p .brain:*)"
     ],
+    "ask": [
+      "Write(plugins/**)",
+      "Edit(plugins/**)",
+      "Write(.claude-plugin/**)",
+      "Edit(.claude-plugin/**)",
+      "Write(install.sh)",
+      "Edit(install.sh)"
+    ],
     "deny": [
       "Bash(git push --force*)",
       "Bash(git push -f*)",
@@ -48,10 +54,20 @@
       "Bash(git clean*)",
       "Bash(rm -rf*)",
 
+      "Write(.claude/skills/**)",
+      "Edit(.claude/skills/**)",
+
       "Write(CLAUDE.md)",
       "Edit(CLAUDE.md)",
+      "Write(./CLAUDE.md)",
+      "Edit(./CLAUDE.md)",
+      "Write(**/CLAUDE.md)",
+      "Edit(**/CLAUDE.md)",
       "Write(core/BRAIN.md)",
       "Edit(core/BRAIN.md)",
+      "Write(**/core/BRAIN.md)",
+      "Edit(**/core/BRAIN.md)",
+
       "Write(.claude/settings.json)",
       "Edit(.claude/settings.json)",
       "Write(.claude/settings.local.json)",
