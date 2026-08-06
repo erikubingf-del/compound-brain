@@ -50,5 +50,5 @@ Template:
 ## autoresearch-loop
 **Level:** Intermediate
 **Related Projects:** compound-brain
-**Key Knowledge:** Autonomous experiment-loop workflow for fixed-evaluator research repos. Use when a repo has a small mutable surface, a fixed evaluation harness, a fixed runtime budget, and iterative keep/discard experiments. Triggers on repos shaped like karpathy/autoresearch, or any project with program.md + a fixed evaluator + a results log. Also use for Poly strategy research via research/lab/autoresearch/program.md.
+**Key Knowledge:** Autonomous experiment-loop workflow for fixed-evaluator research repos. Use when a repo has a small mutable surface, a fixed evaluation harness, a fixed runtime budget, and iterative keep/discard experiments. Triggers on repos shaped like karpathy/autoresearch, or any project with program.md + a fixed evaluator + a results log. Also applies to private strategy-research repos that follow the same program.md + fixed-evaluator + results-log layout; the specific repo and path stay in private memory, not in this public file.
 **Next Improvements:** Adapt to the repo's local control plane.
