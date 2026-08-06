@@ -1,0 +1,15 @@
+{
+  "name": "compound-brain",
+  "owner": {
+    "name": "erikubingf-del",
+    "url": "https://github.com/erikubingf-del/compound-brain"
+  },
+  "description": "Memory-driven operator skills for Claude Code: orientation, knowledge routing, weekly research digest, and digest validation.",
+  "plugins": [
+    {
+      "name": "compound-brain",
+      "source": "./plugins/compound-brain",
+      "description": "Orientation, knowledge routing, weekly LLM-architecture research digest, and typed-contract digest validation."
+    }
+  ]
+}
