@@ -15,3 +15,7 @@ Routines claim a row at start (Status → in_progress, Claimed By → routine na
 | 009 | Verify the plugin loads in a real routine/cloud session | pending | high | — | MUST pass before deleting `.claude/skills/`. Deleting first turns the weekly run into a silent no-op with no error |
 | 010 | Delete `.claude/skills/` once 009 passes | blocked-by-009 | medium | — | Separate commit. Superseded by `plugins/compound-brain/skills/` |
 | 011 | Keep the Bash allowlist narrow | pending | high | — | The Write/Edit denies do not cover shell writes; the boundary holds only because Bash is limited to git/ls/mkdir. Re-check before adding any Bash rule |
+| 012 | Audit routines and skills for `/ultraplan` references | pending | medium | — | Removed in v2.1.220+; dead references will fail silently. Grep found none in this repo on 2026-08-17 run; re-check if new skills are added |
+| 013 | Tag L0/L1 knowledge in AGENTS.md and knowledge/_index.md | pending | medium | — | MemPalace tiered loading: explicit L0/L1 tagging keeps session-start token cost predictable; see resources/mempalace-memory-taxonomy.md |
+| 014 | Evaluate Claude Security plugin on `.claude/` changes | pending | medium | — | Official Anthropic marketplace: `/plugin install claude-security@claude-plugins-official`; requires approval to install and run |
+| 015 | Cross-session messaging prototype for brain skills | pending | low | — | brain-orient → SendMessage → brain-write handoff; design compact message format (not context dump); requires interactive multi-session test |
