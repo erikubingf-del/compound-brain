@@ -15,3 +15,8 @@ Routines claim a row at start (Status → in_progress, Claimed By → routine na
 | 009 | Verify the plugin loads in a real routine/cloud session | pending | high | — | MUST pass before deleting `.claude/skills/`. Deleting first turns the weekly run into a silent no-op with no error |
 | 010 | Delete `.claude/skills/` once 009 passes | blocked-by-009 | medium | — | Separate commit. Superseded by `plugins/compound-brain/skills/` |
 | 011 | Keep the Bash allowlist narrow | pending | high | — | The Write/Edit denies do not cover shell writes; the boundary holds only because Bash is limited to git/ls/mkdir. Re-check before adding any Bash rule |
+| 012 | Weekly LLM architecture digest (2026-08-24, weeks 30–34) | done | high | weekly-digest | Digest at knowledge/research/2026-08-24-llm-architecture-digest.md; pushed to claude/cool-heisenberg-cjkdv2 (session branch, not main — dedup note in digest) |
+| 013 | Audit routines/skills for task-tool dependency | pending | high | — | TaskCreate/TaskUpdate/TodoWrite removed on Opus 5/Sonnet 5/Fable 5+; add CLAUDE_CODE_ENABLE_TODO_TOOLS=1 to hook/settings — NEEDS APPROVAL |
+| 014 | Set outputStyle:Concise in .claude/settings.json | pending | medium | — | NEEDS APPROVAL (settings change); reduces unattended session verbosity |
+| 015 | Draft parallel-research-lanes skill candidate | pending | medium | — | context:fork frontmatter enables parallel 4-lane digest fan-out; draft SKILL.md under .brain/candidate-skills/ — SAFE |
+| 016 | Design cross-session messaging coordination for digest lanes | pending | medium | — | Replace sequential WebSearch with fork subagents that message back findings; draft spec under .brain/knowledge/resources/ — SAFE draft, wiring NEEDS APPROVAL |
