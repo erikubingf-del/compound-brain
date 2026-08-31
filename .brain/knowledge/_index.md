@@ -1,5 +1,5 @@
 # compound-brain — Knowledge Index
-_Last updated: 2026-08-04_
+_Last updated: 2026-08-31_
 
 ## Projects
 - [compound-brain.md](projects/compound-brain.md) — Main project state

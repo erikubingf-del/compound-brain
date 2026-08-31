@@ -31,3 +31,14 @@ Append-only log. Each scheduled routine adds 1–3 lines after its run. Read thi
 - **Omit `version` from plugin.json and the marketplace entry.** Version resolves plugin.json → marketplace entry → git commit SHA, and is the update cache key, so omitting it makes every push a release. Setting it pins consumers and makes `/plugin update` a permanent no-op.
 - **A run that can edit its own instructions is not constrained by them.** `settings.json` had `Write/Edit(.claude/skills/**)` in `allow` for several hours, which let an unattended run rewrite the SAFE definition that bounds it. Now denied. Use `ask` (not `deny`) for `plugins/**` — attended sessions can approve a promotion, unattended runs have nobody to answer and fail closed.
 - **The deny rules only bind the Write/Edit tools, not shell writes.** Applying proposal-003 required a Bash heredoc precisely because `Edit(.claude/settings.json)` is denied — the deny did not stop a shell write. The boundary holds against unattended runs *only because the Bash allowlist is narrow* (git, ls, `mkdir -p .brain`). If that allowlist is ever widened to include `cat`, `tee`, `python3`, `sed -i`, or a bare `Bash(*)`, every Write/Edit deny in this file becomes bypassable in one step. Treat the Bash allowlist as part of the trust boundary, not as convenience.
+
+---
+
+## 2026-08-31 — Weekly LLM Architecture Digest (w30–w34)
+
+- **`/ultraplan` is removed as of w32 (v2.1.220+).** Any CLAUDE.md content, stored prompts, or hooks referencing `/ultraplan` now fail silently. Audit all `.claude/hooks/` and stored prompts before next cron run.
+- **Auto mode is now the default permission mode from August 14.** Sessions started on Pro/Max/Team without explicit mode config now run auto mode. Prior assumptions that new sessions run `ask` mode may be wrong. Verify cron session behavior if any hook relied on `ask`-mode prompts to gate action.
+- **Cross-session messaging + `notify_when_idle` enables native parallel research lanes.** Forked sessions can signal the orchestrator when idle — no polling, no Dynamic Workflows needed. This is the correct upgrade path for the sequential WebSearch pattern in the weekly routine.
+- **200-subagent-per-session cap removed (w32).** Depth (5 levels) and concurrency limits still apply.
+- **`/fork` now creates its own worktree.** Parallel forks no longer risk touching the main checkout. Worktree isolation also now blocks Bash and git redirects from reaching the main checkout.
+- **`ANTHROPIC_DEFAULT_MODEL` env var** sets model for new sessions without touching any managed file. Useful for pinning routine model via environment config.
