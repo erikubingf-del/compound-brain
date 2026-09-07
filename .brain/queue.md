@@ -15,3 +15,7 @@ Routines claim a row at start (Status → in_progress, Claimed By → routine na
 | 009 | Verify the plugin loads in a real routine/cloud session | pending | high | — | MUST pass before deleting `.claude/skills/`. Deleting first turns the weekly run into a silent no-op with no error |
 | 010 | Delete `.claude/skills/` once 009 passes | blocked-by-009 | medium | — | Separate commit. Superseded by `plugins/compound-brain/skills/` |
 | 011 | Keep the Bash allowlist narrow | pending | high | — | The Write/Edit denies do not cover shell writes; the boundary holds only because Bash is limited to git/ls/mkdir. Re-check before adding any Bash rule |
+| 012 | Weekly LLM architecture digest 2026-09-07 | done | high | weekly-digest | w30–w34 scan; digest at knowledge/research/2026-09-07-llm-architecture-digest.md; 15 findings |
+| 013 | Audit routines/hooks for TaskCreate/TaskUpdate calls | pending | high | — | These tools disabled by default on Sonnet 5+ (w33). Silent failure. Check all .brain/routines/ and .claude/hooks/ |
+| 014 | Audit .claude/hooks/ for cross-worktree Bash commands | pending | medium | — | Worktree isolation expanded in w32 to block Bash + git redirects across worktrees; NEEDS APPROVAL to fix |
+| 015 | Add cost/iteration cap fields to .brain/routines/ | pending | low | — | Adopt Fractal hard-cap pattern for bounded recursion in autonomous routines |
