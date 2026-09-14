@@ -15,3 +15,8 @@ Routines claim a row at start (Status → in_progress, Claimed By → routine na
 | 009 | Verify the plugin loads in a real routine/cloud session | pending | high | — | MUST pass before deleting `.claude/skills/`. Deleting first turns the weekly run into a silent no-op with no error |
 | 010 | Delete `.claude/skills/` once 009 passes | blocked-by-009 | medium | — | Separate commit. Superseded by `plugins/compound-brain/skills/` |
 | 011 | Keep the Bash allowlist narrow | pending | high | — | The Write/Edit denies do not cover shell writes; the boundary holds only because Bash is limited to git/ls/mkdir. Re-check before adding any Bash rule |
+| 012 | Weekly LLM architecture digest 2026-09-14 | done | high | weekly-digest | Digest at knowledge/research/2026-09-14-llm-architecture-digest.md |
+| 013 | Audit routines for task-tool usage (TaskCreate/TaskUpdate/TodoWrite disabled on Sonnet 5+) | pending | high | — | grep .brain/ for TaskCreate refs; confirm queue.md covers all tracking needs; settings change for CLAUDE_CODE_ENABLE_TODO_TOOLS NEEDS APPROVAL |
+| 014 | Evaluate Concise output style for unattended routines | pending | medium | — | `outputStyle: Concise` in settings — settings change NEEDS APPROVAL; document as routine-prompt recommendation is SAFE |
+| 015 | Design fork-based parallel research lane pattern for digest routine | pending | medium | — | Update routine prompt (SAFE); cross-session messaging in hooks NEEDS APPROVAL |
+| 016 | Read Always-On Agents (arxiv 2606.30306) and Memory-in-the-Loop (arxiv 2607.05690) papers | pending | low | — | arxiv blocked by egress proxy; needs unblocking or alternative access |
