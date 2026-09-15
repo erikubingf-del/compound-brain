@@ -69,6 +69,24 @@ Give the user a short, concrete orientation, not a file dump:
 - what is pending and unclaimed, highest priority first
 - anything stale, missing, or contradictory
 
+## Surface upgrades awaiting promotion
+
+The weekly digest's APPLY lane leaves adopted upgrades in one of three
+states; two of them need an attended session to finish. When the owner is
+present, list every item sitting in **drafted-awaiting-promotion**
+(candidate-skill drafts under `.brain/candidate-skills/`, proposals in
+`.brain/knowledge/decisions/`) and every **blocked(owner-action)** queue row,
+each with the exact command or edit that closes it. Then drive them to a
+terminal state: promote what the owner approves, and record what they
+decline. Approval means the owner accepting the actual `plugins/**` write
+prompt — if no prompt appears (a repo without that ask rule), the gate is
+missing, not passed: stop and get explicit confirmation in conversation.
+blocked(owner-action) items (settings, hooks, CLAUDE.md, repo admin) reach a
+terminal state only when the owner performs the named command or edit
+themselves, or declines it — Claude surfaces the exact action but never
+performs it. An upgrade parked in a draft folder that no session ever
+surfaces is indistinguishable from one that was never found.
+
 ## Check the contract against reality
 
 `CLAUDE.md` describes surfaces that may not exist yet — `.brain/state/`,

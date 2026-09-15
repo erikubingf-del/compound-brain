@@ -45,24 +45,42 @@ docs state this twice, once as a warning and once in troubleshooting.
 
 ## Installing
 
-Add this repo as a marketplace and enable the plugin, then it is available in
-every project. Follow the current official flow at
-<https://code.claude.com/docs/en/plugins> — the exact `/plugin` command syntax
-and the value schema for the `extraKnownMarketplaces` setting were **not
-verified** in the research run that produced this file, and this brain's
-standing rule is that unverified mechanics get labelled rather than asserted.
+Verified against the official docs on 2026-08-19
+([discover-plugins](https://code.claude.com/docs/en/discover-plugins)):
 
-**Verified alternative, usable right now:** `.claude/skills/` inside a
-directory passed to `--add-dir` is loaded automatically, with live reload. So
-`claude --add-dir /path/to/compound-brain` picks these up in any project
-without any plugin machinery. Note this is a per-invocation flag, not an
-architecture — and note that the `permissions.additionalDirectories` setting
-grants file access only and does **not** load skills.
+```
+/plugin marketplace add erikubingf-del/compound-brain
+/plugin install compound-brain@compound-brain
+```
+
+At the install prompt, pick a scope:
+
+- **User scope** — loads these skills in **every** project on the machine.
+  This is the scope that makes the brain's capabilities ambient.
+- **Project scope** — writes the plugin into that repo's
+  `.claude/settings.json` (`enabledPlugins`), which is the documented path
+  for cloud sessions where `/plugin` isn't available. Use this in the brain
+  repo itself so scheduled cloud runs load the plugin.
+
+**Update cadence, resolved:** Claude Code refreshes marketplaces and updates
+installed plugins in the background after session start; updated plugins load
+on next launch or via `/reload-plugins`. Third-party marketplaces like this
+one have auto-update **disabled by default** — enable it once per machine via
+`/plugin` → Marketplaces → compound-brain → **Enable auto-update**. Combined
+with the omitted `version` (commit SHA = version), every push then propagates
+on its own. Without auto-update, three steps:
+`/plugin marketplace update compound-brain` (catalog refresh only), then
+`/plugin update compound-brain@compound-brain` (updates the installed
+plugin — [plugin update](https://code.claude.com/docs/en/plugins-reference#plugin-update)),
+then `/reload-plugins`.
+([auto-updates](https://code.claude.com/docs/en/discover-plugins#configure-auto-updates))
+
+**Fallback without plugin machinery:** `.claude/skills/` inside a directory
+passed to `--add-dir` is loaded automatically, with live reload — so
+`claude --add-dir /path/to/compound-brain` picks these up per-invocation.
+The `permissions.additionalDirectories` setting grants file access only and
+does **not** load skills.
 ([additional directories](https://code.claude.com/docs/en/skills#skills-from-additional-directories))
-
-**Update cadence is an open question.** Verified: version resolution and that
-version is the update cache key. Not verified: whether enabled plugins pull new
-commits on their own. Treat updating as an explicit step until confirmed.
 
 ## These skills check their scope
 

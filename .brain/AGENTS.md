@@ -1,5 +1,7 @@
 # Brain Agent Learnings
 
+<!-- must-load: L1 — read this file and queue.md at the start of every run; load knowledge/ subtrees on demand only (see knowledge/resources/mempalace-memory-taxonomy.md) -->
+
 Append-only log. Each scheduled routine adds 1–3 lines after its run. Read this before starting any routine.
 
 ---
@@ -40,3 +42,12 @@ Append-only log. Each scheduled routine adds 1–3 lines after its run. Read thi
 - **Cross-session messaging (v2.1.224) enables runtime skill coordination.** Sessions discover each other via `ListAgents`/`SendMessage`. Only text is passed, not history or files. Brain skills that hand off findings should emit compact, actionable messages — not context dumps — so the receiving session can act independently.
 - **Selection beats encoding for memory loading.** MemPalace pattern (third-party, extracted natively): 4-layer stack where L0/L1 load at session start (~818 tokens), L2/L3 load on demand. Maps cleanly onto .brain/ tree: AGENTS.md + queue.md = L1, knowledge/projects/ = L2, full knowledge/ = L3. Tag L0/L1 explicitly (queue 013) to keep session-start token cost predictable.
 - **Ultraplan removed in v2.1.220+.** Any stored prompt or skill referencing `/ultraplan` now has a dead reference. Grep found no references in this repo — standing rule: grep for ultraplan before future skill authoring.
+
+---
+
+## 2026-08-19 — Attended upgrade session (owner directive: apply, don't just report)
+
+- **Owner directive: adopted upgrades must be APPLIED, not accumulate as pending.** The routine now has an APPLY lane — every ADOPT ends a run as implemented / drafted-awaiting-promotion / blocked(reason), never silent `pending`. Unattended runs still write only `.brain/**` (web-sourced text must pass a human eye before becoming plugin instructions — boundary kept deliberately); attended sessions promote drafts, with the ask-gate on `plugins/**` as the approval mechanism.
+- **The plugin is NOT loading in cloud sessions.** This cloud session's skills appeared un-namespaced → they came from `.claude/skills/`, not the plugin. Verified fix (official docs): project-scope `/plugin install` writes `enabledPlugins` into `.claude/settings.json`, the documented path for cloud sessions. Owner action queued (016). Do not delete `.claude/skills/` before this lands and a cloud run shows `compound-brain:*` skills — it is the only thing keeping scheduled runs skilled.
+- **Harness-pinned branches strand digests.** The 2026-08-17 digest went to `claude/cool-heisenberg-u6pz4k` because the cloud harness pins a branch and forbids pushing elsewhere; a fresh clone of `main` never sees it and dedup silently breaks. Routine now fetches all branches for dedup and must report an unmerged pinned-branch push as a half-done run. Owner merge queued (017).
+- **Update propagation verified:** version omitted → every push is a release; auto-update is OFF by default for third-party marketplaces — enabled per-marketplace via the `/plugin` UI (a local setting, so effectively once per machine; admins can push `autoUpdate` via `extraKnownMarketplaces` in managed settings); user-scope install covers all local projects. Manual update is three steps (marketplace update → `/plugin update` → `/reload-plugins`). Full verified guide: `knowledge/resources/plugin-enablement.md`.

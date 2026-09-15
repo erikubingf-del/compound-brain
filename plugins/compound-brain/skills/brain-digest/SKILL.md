@@ -70,15 +70,32 @@ back and update `outcome` on prior ADOPT items — `pending` becomes
 did not. A digest series where every outcome stays `pending` forever is
 recording activity, not learning.
 
-## Self-apply only what is safe
+## Apply upgrades — don't just report them
 
-SAFE means markdown creates, appends, and renames under `.brain/**`. Apply
-those in the same run — a recommendation nobody executes is overhead.
+Every ADOPT item must end the run in a terminal state: **implemented**,
+**drafted-awaiting-promotion**, or **blocked(reason)**. A silent `pending`
+is a failed step, not a neutral one (owner directive, 2026-08-19; details in
+the routine's APPLY lane section).
 
-Everything else is proposed, never done: `CLAUDE.md` or `core/BRAIN.md`
+SAFE to implement in the same run: markdown creates, appends, and renames
+under `.brain/**` — resources, candidate-skill drafts, queue and AGENTS
+updates — but NEVER `.brain/routines/**`: the routine file is executable
+instructions for the next unattended run, and a run may not write the rules
+that constrain itself. Draft routine changes for attended promotion instead.
+Apply the rest immediately; a recommendation nobody executes is overhead.
+
+Upgrades that belong in `plugins/**` get a full ready-to-promote draft under
+`.brain/candidate-skills/` and a queue entry — never a direct write from an
+unattended run, because this run's inputs are open web pages and plugin
+content executes in every enabled project. Attended sessions promote drafts.
+Approval means the owner accepting the actual `plugins/**` write prompt; if
+no prompt appears, the gate is missing, not passed — stop and ask in
+conversation. Deny-listed surfaces are never promoted by Claude via any tool.
+
+Never done by this skill, only proposed: `CLAUDE.md` or `core/BRAIN.md`
 content, hooks, scripts, cron, MCP config, settings, `.gitignore`, and
 anything touching live production or funds-handling systems. Write those into
-the digest's Needs Approval section, one line each.
+the digest's Needs Approval section with the exact owner action named.
 
 ## Before committing
 
@@ -87,3 +104,10 @@ for project, service, and host names — this repo is public and git history is
 permanent. Then commit and push per Step 6, and confirm the working tree is
 clean and local `main` matches `origin/main`. If they differ, the run has not
 persisted; say so rather than reporting success.
+
+If the harness pins the session to a `claude/*` branch, push there — but the
+run is only half done: a digest not on `main` is invisible to next week's
+fresh clone, so dedup breaks silently. Name the branch in the final report
+and ask the owner to merge. For the same reason, dedup at the START of a run
+must fetch all branches and check `git log --all -- .brain/knowledge/research/`
+for stranded digests.

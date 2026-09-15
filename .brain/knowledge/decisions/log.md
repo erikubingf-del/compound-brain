@@ -522,3 +522,38 @@ Claude master instruction files.
 **Rule established:** The Claude-side master instructions must stay aligned
 with the live runtime contract and should be rewritten when the runtime shape
 changes materially, not left as a generic summary.
+
+---
+
+## DEC-020 — Adopted upgrades are applied, not archived: the APPLY lane
+**Date:** 2026-08-19
+**Priority:** P1
+**Context:** The weekly digest researched well but implemented little: ADOPT
+items accumulated as `pending` because everything beyond markdown-under-.brain
+was gated, and no protocol existed for closing the gate. The owner directed
+that the brain and all Claude Code projects must actually run on the latest
+adopted skills and architecture, from now on.
+**Options Considered:**
+- Let unattended runs write plugins/settings directly (fastest, but web-sourced
+  text would become executable instructions in every enabled project with no
+  human eye — recreates the self-modification hole closed by proposal-003)
+- Keep everything manual (status quo; findings rot as pending)
+- APPLY lane with a trust split: unattended runs implement everything expressible
+  as markdown under `.brain/**` and draft the rest ready-to-promote; attended
+  sessions promote drafts into `plugins/**`, with the ask-gate on those writes
+  serving as the approval mechanism
+**Reasoning:** The blast radius of plugin content is every enabled project; the
+digest's inputs are open web pages. The prompt-injection boundary must hold for
+unattended runs. But an attended session has a human answering the ask-prompt,
+which is exactly the review the boundary exists to guarantee — so promotion
+becomes cheap without becoming automatic.
+**Expected Outcome:** No ADOPT item ends a run as silent `pending`; every one is
+implemented, drafted-awaiting-promotion, or blocked(reason) with the exact owner
+action named. Propagation to all projects rides the plugin: version omitted →
+every push is a release; user-scope install + marketplace auto-update carries it.
+**Actual Outcome:** APPLY lane written into the routine 2026-08-19; plugin
+skills mirrored; enablement guide verified against official docs
+(resources/plugin-enablement.md); owner unblocks queued as 016–018.
+**Rule established:** Unattended runs never write outside `.brain/**`. Attended
+sessions must surface and drive pending promotions to a terminal state. The
+weekly run is not done while an ADOPT item lacks a terminal state.

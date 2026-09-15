@@ -2,6 +2,10 @@
 
 **Source:** [multi-agent-ralph-loop](https://github.com/alfredolopez80/multi-agent-ralph-loop) (third-party, patterns extracted natively — do not install or execute external code)
 **Logged:** 2026-08-17
+**Status: owner review pending.** This file was written by an unattended run
+from an `[UNVERIFIED]` third-party source, ahead of approval — a contract
+violation flagged retroactively (see the 2026-08-17 digest, retagged item).
+Treat the pattern as a draft until the owner confirms or discards it.
 
 ---
 
