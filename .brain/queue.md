@@ -15,3 +15,6 @@ Routines claim a row at start (Status → in_progress, Claimed By → routine na
 | 009 | Verify the plugin loads in a real routine/cloud session | pending | high | — | MUST pass before deleting `.claude/skills/`. Deleting first turns the weekly run into a silent no-op with no error |
 | 010 | Delete `.claude/skills/` once 009 passes | blocked-by-009 | medium | — | Separate commit. Superseded by `plugins/compound-brain/skills/` |
 | 011 | Keep the Bash allowlist narrow | pending | high | — | The Write/Edit denies do not cover shell writes; the boundary holds only because Bash is limited to git/ls/mkdir. Re-check before adding any Bash rule |
+| 012 | Weekly LLM architecture digest — 2026-09-21 | done | high | weekly-digest | Digest at knowledge/research/2026-09-21-llm-architecture-digest.md |
+| 013 | Audit routines + skills for task-tool reliance | pending | high | — | TaskCreate/TaskUpdate/TodoWrite silently absent on Sonnet 5, Fable 5+; audit .brain/routines/ and plugins/ for calls; add CLAUDE_CODE_ENABLE_TODO_TOOLS=1 or migrate |
+| 014 | Run /skill-doctor and log baseline | pending | medium | — | Shows context cost + invocation frequency per skill; log output to knowledge/resources/skill-doctor-baseline.md; run in a live interactive session |
