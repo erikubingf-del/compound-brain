@@ -1,5 +1,8 @@
 # compound-brain — Knowledge Index
-_Last updated: 2026-08-04_
+_Last updated: 2026-09-22_
+
+## ⚠ Platform Notices — Read First
+- [platform-notices.md](resources/platform-notices.md) — Breaking changes and standing alerts for all sessions. **Task tools silent on Sonnet 5+; bypassPermissions blocked in project settings.**
 
 ## Projects
 - [compound-brain.md](projects/compound-brain.md) — Main project state
@@ -8,6 +11,8 @@ _Last updated: 2026-08-04_
 - [deployment.md](areas/deployment.md) — Deployment rules
 
 ## Resources
+- [platform-notices.md](resources/platform-notices.md) — Breaking changes and standing alerts (2026-09-21+)
+- [prompt-cache-ttl-note.md](resources/prompt-cache-ttl-note.md) — Set `promptCacheTtl: "1h"` for cron session cost reduction
 - [sage-novelty-gate-spec.md](resources/sage-novelty-gate-spec.md) — Write-side memory gate design (queue 005)
 
 ## Skills
