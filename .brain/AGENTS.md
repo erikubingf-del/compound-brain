@@ -31,3 +31,11 @@ Append-only log. Each scheduled routine adds 1–3 lines after its run. Read thi
 - **Omit `version` from plugin.json and the marketplace entry.** Version resolves plugin.json → marketplace entry → git commit SHA, and is the update cache key, so omitting it makes every push a release. Setting it pins consumers and makes `/plugin update` a permanent no-op.
 - **A run that can edit its own instructions is not constrained by them.** `settings.json` had `Write/Edit(.claude/skills/**)` in `allow` for several hours, which let an unattended run rewrite the SAFE definition that bounds it. Now denied. Use `ask` (not `deny`) for `plugins/**` — attended sessions can approve a promotion, unattended runs have nobody to answer and fail closed.
 - **The deny rules only bind the Write/Edit tools, not shell writes.** Applying proposal-003 required a Bash heredoc precisely because `Edit(.claude/settings.json)` is denied — the deny did not stop a shell write. The boundary holds against unattended runs *only because the Bash allowlist is narrow* (git, ls, `mkdir -p .brain`). If that allowlist is ever widened to include `cat`, `tee`, `python3`, `sed -i`, or a bare `Bash(*)`, every Write/Edit deny in this file becomes bypassable in one step. Treat the Bash allowlist as part of the trust boundary, not as convenience.
+
+---
+
+## 2026-09-28 — Weekly LLM Architecture Digest (weeks 30–37)
+
+- **`TaskCreate`, `TaskUpdate`, `TodoWrite` are disabled on Sonnet 5, Opus 4.8, Fable 5, Mythos 5 and later models (w33).** Brain uses `.brain/queue.md` directly — unaffected. But audit every skill for task-tool references; silent failure on modern models, no error thrown. Set `CLAUDE_CODE_ENABLE_TODO_TOOLS=1` to re-enable if a skill genuinely needs it.
+- **`/ultraplan` and the `ultraplan` keyword are removed (w32).** The 2026-08-03 ADOPT for Spec-Driven Dev / UltraPlan is now invalidated. Use plan mode (`/plan`) for multi-step planning instead.
+- **Auto mode is the default for Pro/Max/Team sessions since August 14 (w32).** This changes the permission baseline for all autonomous routines. The "one permission setup session" from prior learnings is less critical — the classifier handles most safe actions. Priority: audit what the classifier blocks and add explicit allow rules for tools the weekly routine legitimately needs (WebSearch, Write under .brain/, git push).

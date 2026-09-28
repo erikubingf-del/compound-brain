@@ -5,6 +5,9 @@ Routines claim a row at start (Status → in_progress, Claimed By → routine na
 | ID | Task | Status | Priority | Claimed By | Notes |
 |----|------|--------|----------|------------|-------|
 | 001 | Weekly LLM architecture digest (2026-08-03 research + 2026-08-04 bootstrap) | done | high | weekly-digest | Digests in knowledge/research/ (tracked; daily/ is gitignored) |
+| 012 | Weekly LLM architecture digest 2026-09-28 | done | high | weekly-digest | Digest at knowledge/research/2026-09-28-llm-architecture-digest.md |
+| 013 | Run `/skill-doctor` + `claude plugin eval init` to measure plugin health | pending | high | — | NEEDS APPROVAL — interactive session; resolves 009/010 |
+| 014 | Audit all skills for TaskCreate/TodoWrite references | pending | medium | — | Silent failure on Sonnet 5, Fable 5+; SAFE to audit; NEEDS APPROVAL to edit |
 | 002 | CLAUDE.md audit → hierarchical split | proposal-written | high | weekly-digest | Proposal at knowledge/decisions/proposal-002-claude-md-hierarchy.md — NEEDS APPROVAL to apply |
 | 003 | validate-digest typed schema skill | done | medium | weekly-digest | knowledge/skills/validate-digest.md |
 | 004 | ~~Enable agent checkpointing~~ | cancelled | — | — | Feature claim failed verification against official docs |
