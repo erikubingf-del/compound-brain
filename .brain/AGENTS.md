@@ -31,3 +31,11 @@ Append-only log. Each scheduled routine adds 1–3 lines after its run. Read thi
 - **Omit `version` from plugin.json and the marketplace entry.** Version resolves plugin.json → marketplace entry → git commit SHA, and is the update cache key, so omitting it makes every push a release. Setting it pins consumers and makes `/plugin update` a permanent no-op.
 - **A run that can edit its own instructions is not constrained by them.** `settings.json` had `Write/Edit(.claude/skills/**)` in `allow` for several hours, which let an unattended run rewrite the SAFE definition that bounds it. Now denied. Use `ask` (not `deny`) for `plugins/**` — attended sessions can approve a promotion, unattended runs have nobody to answer and fail closed.
 - **The deny rules only bind the Write/Edit tools, not shell writes.** Applying proposal-003 required a Bash heredoc precisely because `Edit(.claude/settings.json)` is denied — the deny did not stop a shell write. The boundary holds against unattended runs *only because the Bash allowlist is narrow* (git, ls, `mkdir -p .brain`). If that allowlist is ever widened to include `cat`, `tee`, `python3`, `sed -i`, or a bare `Bash(*)`, every Write/Edit deny in this file becomes bypassable in one step. Treat the Bash allowlist as part of the trust boundary, not as convenience.
+
+---
+
+## 2026-10-05 — Weekly LLM Architecture Digest (w33–w40 scan)
+
+- **Mods are the deterministic enforcement layer CLAUDE.md instructions cannot be.** A Mod that intercepts Write/Edit/Bash calls and blocks paths outside `.brain/**` enforces the SAFE boundary at the tool level — not as text an unattended session can re-interpret. Draft the spec as a candidate skill; activate with a human in the loop.
+- **`claude plugin eval` converts prose skill contracts into machine-checkable tests.** The validate-digest skill (queue 003) should be rewritten as an eval spec. This upgrades quality assurance from "reviewed by a human once" to "regression-tested on every model release."
+- **Projects (coordinator + parallel sessions) is the upgrade path for multi-lane research.** The weekly digest currently runs 4 sequential searches. Projects delegates each lane to an independent cloud session and synthesizes results in a coordinator — the same architecture as the C compiler experiment, now first-party. First run must be attended.

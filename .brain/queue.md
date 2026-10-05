@@ -15,3 +15,7 @@ Routines claim a row at start (Status → in_progress, Claimed By → routine na
 | 009 | Verify the plugin loads in a real routine/cloud session | pending | high | — | MUST pass before deleting `.claude/skills/`. Deleting first turns the weekly run into a silent no-op with no error |
 | 010 | Delete `.claude/skills/` once 009 passes | blocked-by-009 | medium | — | Separate commit. Superseded by `plugins/compound-brain/skills/` |
 | 011 | Keep the Bash allowlist narrow | pending | high | — | The Write/Edit denies do not cover shell writes; the boundary holds only because Bash is limited to git/ls/mkdir. Re-check before adding any Bash rule |
+| 012 | Weekly LLM architecture digest 2026-10-05 | done | medium | weekly-digest | 15 candidates; 5 ADOPT (Mods, plugin eval, Projects, maxEffortLevel, Managed Agents); digest at knowledge/research/2026-10-05 |
+| 013 | Draft brain-write-gate Mod spec | pending | high | — | SAFE to draft under candidate-skills/; activation NEEDS APPROVAL. Enforces SAFE boundary deterministically. See 2026-10-05 digest |
+| 014 | Test claude plugin eval on validate-digest skill | pending | medium | — | First attended session only. Converts prose contract to machine-checkable test suite. See 2026-10-05 digest |
+| 015 | Plan Projects beta attended run for weekly digest | pending | medium | — | Coordinator + parallel sessions maps onto 4-lane research. Run once attended before enabling in scheduled routine. See 2026-10-05 digest |
