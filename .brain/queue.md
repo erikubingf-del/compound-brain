@@ -15,3 +15,6 @@ Routines claim a row at start (Status → in_progress, Claimed By → routine na
 | 009 | Verify the plugin loads in a real routine/cloud session | pending | high | — | MUST pass before deleting `.claude/skills/`. Deleting first turns the weekly run into a silent no-op with no error |
 | 010 | Delete `.claude/skills/` once 009 passes | blocked-by-009 | medium | — | Separate commit. Superseded by `plugins/compound-brain/skills/` |
 | 011 | Keep the Bash allowlist narrow | pending | high | — | The Write/Edit denies do not cover shell writes; the boundary holds only because Bash is limited to git/ls/mkdir. Re-check before adding any Bash rule |
+| 012 | Weekly digest 2026-10-12 | done | high | weekly-digest | Digest at knowledge/research/2026-10-12-llm-architecture-digest.md; w30–w37 covered |
+| 013 | Run `/skill-doctor` on compound-brain plugin | pending | high | — | Run before any skill pruning; provides token cost + usage frequency data |
+| 014 | Set up `claude plugin eval` harness | pending | high | — | Blocked on: plugin available in session. Closes queue 009 with reproducible evidence |

@@ -31,3 +31,11 @@ Append-only log. Each scheduled routine adds 1–3 lines after its run. Read thi
 - **Omit `version` from plugin.json and the marketplace entry.** Version resolves plugin.json → marketplace entry → git commit SHA, and is the update cache key, so omitting it makes every push a release. Setting it pins consumers and makes `/plugin update` a permanent no-op.
 - **A run that can edit its own instructions is not constrained by them.** `settings.json` had `Write/Edit(.claude/skills/**)` in `allow` for several hours, which let an unattended run rewrite the SAFE definition that bounds it. Now denied. Use `ask` (not `deny`) for `plugins/**` — attended sessions can approve a promotion, unattended runs have nobody to answer and fail closed.
 - **The deny rules only bind the Write/Edit tools, not shell writes.** Applying proposal-003 required a Bash heredoc precisely because `Edit(.claude/settings.json)` is denied — the deny did not stop a shell write. The boundary holds against unattended runs *only because the Bash allowlist is narrow* (git, ls, `mkdir -p .brain`). If that allowlist is ever widened to include `cat`, `tee`, `python3`, `sed -i`, or a bare `Bash(*)`, every Write/Edit deny in this file becomes bypassable in one step. Treat the Bash allowlist as part of the trust boundary, not as convenience.
+
+---
+
+## 2026-10-12 — Weekly LLM Architecture Digest (w30–w37 catch-up)
+
+- **Fork mode is now on by default in interactive sessions (w33, v2.1.225+).** Claude delegates side tasks to background subagents inheriting the full conversation without an explicit `/fork`. Behavior in `-p`/non-interactive/cron sessions is unverified — document when first observed in a routine context.
+- **`/skill-doctor` (w36) provides token cost + usage frequency for every skill.** This is the right instrument before any skill pruning decision (queue 009/010). Run it before deleting `.claude/skills/` or anything in the plugin's skills directory.
+- **`claude plugin eval` (w37) is the right tool to close queue 009** (verify plugin loads in cloud sessions). Run `claude plugin eval init` from the plugin root to draft test cases, then `claude plugin eval .` to score with a no-plugin baseline. A passing eval harness is more durable evidence than a one-time manual check.
