@@ -15,3 +15,7 @@ Routines claim a row at start (Status → in_progress, Claimed By → routine na
 | 009 | Verify the plugin loads in a real routine/cloud session | pending | high | — | MUST pass before deleting `.claude/skills/`. Deleting first turns the weekly run into a silent no-op with no error |
 | 010 | Delete `.claude/skills/` once 009 passes | blocked-by-009 | medium | — | Separate commit. Superseded by `plugins/compound-brain/skills/` |
 | 011 | Keep the Bash allowlist narrow | pending | high | — | The Write/Edit denies do not cover shell writes; the boundary holds only because Bash is limited to git/ls/mkdir. Re-check before adding any Bash rule |
+| 012 | Weekly LLM architecture digest 2026-10-19 | done | high | weekly-digest | Digest at knowledge/research/2026-10-19-llm-architecture-digest.md; 15 finds, 7 ADOPT |
+| 013 | Run `/skill-doctor` and log results | pending | medium | — | Blocked by queue-009 (plugin load verified). Log to knowledge/research/skill-doctor-YYYY-MM-DD.md |
+| 014 | Run `claude plugin eval init` on weekly digest | pending | medium | — | Draft eval cases for the digest routine; verify required sections and outcome fields |
+| 015 | Decide fork mode for cron sessions (`CLAUDE_CODE_FORK_SUBAGENT=0`?) | pending | medium | — | Fork on by default as of v2.1.302 — evaluate cost vs. benefit for unattended digest runs |

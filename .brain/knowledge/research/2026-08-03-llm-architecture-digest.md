@@ -18,7 +18,7 @@
 | 12 | MCP 2026-07-28 Stateless Spec | MCP moved to request/response model; serverless/edge deployable; cacheable list results; vendor-neutral (Linux Foundation) | https://blog.modelcontextprotocol.io/posts/2026-07-28/ | WATCH — [VERIFIED: official MCP blog + claude.com/blog] | high | pending |
 | 13 | DeerFlow 2.0 SuperAgent Harness | Long-horizon orchestration: parallel sandboxed subtasks, Markdown-defined skill modules, model-agnostic | https://github.com/bytedance/deer-flow | WATCH | medium | pending |
 | 14 | Hybrid Graph Memory (Mem0/Zep/A-MEM) | Three-tier memory: vector (episodic) + temporal knowledge graph (relational) + KV (procedural) | https://vectorize.io/articles/best-ai-agent-memory-systems | TEST | medium | pending |
-| 15 | Dynamic Workflows (Workflows feature) | Dozens–1000 parallel agents per run; available on all paid plans (not Enterprise-only); confirmed standard feature v2.1.154+ | https://code.claude.com/docs/en/workflows.md | WATCH — [VERIFIED: capability real; tier/preview claims in prior draft were incorrect] | high | pending |
+| 15 | Dynamic Workflows (Workflows feature) | Dozens–1000 parallel agents per run; available on all paid plans (not Enterprise-only); confirmed standard feature v2.1.154+ | https://code.claude.com/docs/en/workflows.md | WATCH — [VERIFIED: capability real; tier/preview claims in prior draft were incorrect] | high | confirmed — 2026-10-19: week 22 official docs confirm it as standard feature on paid plans |
 
 ---
 
