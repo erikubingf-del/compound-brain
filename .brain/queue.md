@@ -15,3 +15,8 @@ Routines claim a row at start (Status → in_progress, Claimed By → routine na
 | 009 | Verify the plugin loads in a real routine/cloud session | pending | high | — | MUST pass before deleting `.claude/skills/`. Deleting first turns the weekly run into a silent no-op with no error |
 | 010 | Delete `.claude/skills/` once 009 passes | blocked-by-009 | medium | — | Separate commit. Superseded by `plugins/compound-brain/skills/` |
 | 011 | Keep the Bash allowlist narrow | pending | high | — | The Write/Edit denies do not cover shell writes; the boundary holds only because Bash is limited to git/ls/mkdir. Re-check before adding any Bash rule |
+| 012 | Audit routines/skills for TaskCreate/TaskUpdate usage | pending | high | — | Sonnet 5+/Opus 5+/Fable 5+ no longer have task-tracking tools by default (w33). Silent no-tool failure. Add CLAUDE_CODE_ENABLE_TODO_TOOLS=1 or rewrite to queue.md pattern |
+| 013 | Run /skill-doctor to audit plugin skill context cost | pending | medium | — | Every installed skill pays context tokens on every turn. /skill-doctor shows cost vs. usage frequency; prune unused skills |
+| 014 | Set promptCacheTtl: "1h" in settings for API/cloud sessions | pending | medium | — | NEEDS APPROVAL — reduces cost of repeat file reads within a routine session. Touches .claude/settings.json |
+| 015 | Evaluate forked parallel research lanes for weekly digest | pending | medium | — | Cross-session messaging (w32) enables native parallel lanes via /fork + SendMessage. Supersedes hcom WATCH item |
+| 016 | Evaluate claude plugin eval init for brain skills | pending | low | — | Quantifies whether each brain skill improves outcomes; makes real API calls per run |
