@@ -15,3 +15,7 @@ Routines claim a row at start (Status → in_progress, Claimed By → routine na
 | 009 | Verify the plugin loads in a real routine/cloud session | pending | high | — | MUST pass before deleting `.claude/skills/`. Deleting first turns the weekly run into a silent no-op with no error |
 | 010 | Delete `.claude/skills/` once 009 passes | blocked-by-009 | medium | — | Separate commit. Superseded by `plugins/compound-brain/skills/` |
 | 011 | Keep the Bash allowlist narrow | pending | high | — | The Write/Edit denies do not cover shell writes; the boundary holds only because Bash is limited to git/ls/mkdir. Re-check before adding any Bash rule |
+| 012 | Weekly LLM architecture digest 2026-11-02 | done | high | weekly-digest | Digest at knowledge/research/2026-11-02-llm-architecture-digest.md; 15 finds, 5 ADOPT |
+| 013 | Run /skill-doctor and document skill context costs | pending | high | — | Prerequisite for queue-002 CLAUDE.md audit; run `/skill-doctor -p` and write output to .brain/knowledge/resources/skill-cost-report.md |
+| 014 | Audit .claude/settings.local.json for neutered bypassPermissions | pending | medium | — | w36 silently broke project-level bypassPermissions; check and fix if present |
+| 015 | Add promptCacheTtl: "1h" to project settings | pending | medium | — | Reduces cost for scheduled runs that re-read brain files; NEEDS APPROVAL to touch settings |

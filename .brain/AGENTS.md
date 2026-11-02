@@ -31,3 +31,11 @@ Append-only log. Each scheduled routine adds 1–3 lines after its run. Read thi
 - **Omit `version` from plugin.json and the marketplace entry.** Version resolves plugin.json → marketplace entry → git commit SHA, and is the update cache key, so omitting it makes every push a release. Setting it pins consumers and makes `/plugin update` a permanent no-op.
 - **A run that can edit its own instructions is not constrained by them.** `settings.json` had `Write/Edit(.claude/skills/**)` in `allow` for several hours, which let an unattended run rewrite the SAFE definition that bounds it. Now denied. Use `ask` (not `deny`) for `plugins/**` — attended sessions can approve a promotion, unattended runs have nobody to answer and fail closed.
 - **The deny rules only bind the Write/Edit tools, not shell writes.** Applying proposal-003 required a Bash heredoc precisely because `Edit(.claude/settings.json)` is denied — the deny did not stop a shell write. The boundary holds against unattended runs *only because the Bash allowlist is narrow* (git, ls, `mkdir -p .brain`). If that allowlist is ever widened to include `cat`, `tee`, `python3`, `sed -i`, or a bare `Bash(*)`, every Write/Edit deny in this file becomes bypassable in one step. Treat the Bash allowlist as part of the trust boundary, not as convenience.
+
+---
+
+## 2026-11-02 — Weekly LLM Architecture Digest (w32–w37 coverage)
+
+- **Task tools (TaskCreate/TaskUpdate/TodoWrite) are disabled by default on Sonnet 5, Opus 4.8, Fable 5, Mythos 5 and later.** Set `CLAUDE_CODE_ENABLE_TODO_TOOLS=1` to re-enable. The compound-brain markdown queue.md pattern is the correct durable fallback and is already in use — this confirms it was the right choice. Do not rely on task tool availability unless the env var is explicitly set. [VERIFIED: official docs w33]
+- **`/skill-doctor` quantifies context cost per skill.** Run it before any CLAUDE.md or skills audit (queue-002, queue-013). Every loaded skill adds context on every turn; `/skill-doctor -p` prints a text report in non-interactive mode. [VERIFIED: official docs w36]
+- **`bypassPermissions` in project `.claude/settings.json` is silently neutered from w36.** Sessions that relied on project-level bypass now start in Manual mode without warning. Audit queue-014 added. [VERIFIED: official docs w36]
