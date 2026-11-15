@@ -16,6 +16,8 @@ TEMPLATE_ROOT = Path(__file__).resolve().parents[1] / "templates" / "project_cla
 CODEX_TEMPLATE_ROOT = Path(__file__).resolve().parents[1] / "templates" / "project_codex"
 MANAGED_BLOCK_START = "<!-- compound-brain managed block:begin -->"
 MANAGED_BLOCK_END = "<!-- compound-brain managed block:end -->"
+CODEX_MANAGED_BLOCK_START = "<!-- compound-brain codex adapter:begin -->"
+CODEX_MANAGED_BLOCK_END = "<!-- compound-brain codex adapter:end -->"
 
 
 def load_template(template_root: Path, relative_path: str, fallback: str) -> str:
@@ -45,6 +47,20 @@ def merge_managed_block(existing: str, managed: str) -> str:
     return managed_block + "\n\n" + existing.lstrip()
 
 
+def merge_codex_managed_block(existing: str, managed: str) -> str:
+    """Keep human-authored root AGENTS.md instructions while refreshing our adapter."""
+    block = f"{CODEX_MANAGED_BLOCK_START}\n{managed.strip()}\n{CODEX_MANAGED_BLOCK_END}"
+    pattern = re.compile(
+        rf"{re.escape(CODEX_MANAGED_BLOCK_START)}.*?{re.escape(CODEX_MANAGED_BLOCK_END)}\n*",
+        re.DOTALL,
+    )
+    if pattern.search(existing):
+        return pattern.sub(lambda _: block + "\n\n", existing, count=1).strip() + "\n"
+    if not existing.strip():
+        return block + "\n"
+    return block + "\n\n" + existing.lstrip()
+
+
 def replace_section(content: str, heading: str, lines: list[str]) -> str:
     body = "\n".join(lines).rstrip() + "\n"
     pattern = re.compile(rf"(## {re.escape(heading)}\n)(.*?)(?=\n## |\Z)", re.DOTALL)
@@ -62,7 +78,7 @@ def write_project_claude_md(repo: Path, activation_mode: str) -> None:
             "This repo has a prepared project brain under compound-brain.\n\n"
             "## Control Plane\n"
             "- Project memory lives in `.brain/`\n"
-            "- Codex reads `.codex/AGENTS.md`\n"
+            "- Codex reads repo-root `AGENTS.md` (legacy copy in `.codex/AGENTS.md`)\n"
             "- Repo-local `.claude/` is created only after explicit activation\n\n"
             "## Operating Rule\n"
             "Read `.brain/memory/project_context.md` and `.brain/memory/feedback_rules.md` before project-specific work.\n"
@@ -87,7 +103,13 @@ def materialize_codex_adapter(repo: Path) -> None:
         "AGENTS.md",
         "# [PROJECT_NAME]\n\nRead `CLAUDE.md` and `.brain/` before project-specific work.\n",
     )
-    (codex_dir / "AGENTS.md").write_text(render_template(template, repo.name))
+    rendered = render_template(template, repo.name)
+    (codex_dir / "AGENTS.md").write_text(rendered)  # Legacy compatibility copy.
+
+    # Codex discovers AGENTS.md from the repository root, not from .codex/.
+    root_agents_path = repo / "AGENTS.md"
+    existing = root_agents_path.read_text() if root_agents_path.exists() else ""
+    root_agents_path.write_text(merge_codex_managed_block(existing, rendered))
 
 
 def materialize_prepared_project(repo: Path) -> None:
