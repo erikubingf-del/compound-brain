@@ -311,7 +311,10 @@ fi
 
 # Decision log seed
 if [[ ! -f "${KNOWLEDGE_DIR}/decisions/log.md" ]]; then
-  cat > "${KNOWLEDGE_DIR}/decisions/log.md" <<'EOF'
+  if $DRY_RUN; then
+    echo "  [dry-run] write ${KNOWLEDGE_DIR}/decisions/log.md"
+  else
+    cat > "${KNOWLEDGE_DIR}/decisions/log.md" <<'EOF'
 # Decision Log
 
 > Every strategic decision that affects architecture, product direction, deployment,
@@ -334,12 +337,16 @@ if [[ ! -f "${KNOWLEDGE_DIR}/decisions/log.md" ]]; then
 ---
 
 EOF
-  ok "Created: decisions/log.md"
+    ok "Created: decisions/log.md"
+  fi
 fi
 
 # knowledge index
 if [[ ! -f "${KNOWLEDGE_DIR}/_index.md" ]]; then
-  cat > "${KNOWLEDGE_DIR}/_index.md" <<'EOF'
+  if $DRY_RUN; then
+    echo "  [dry-run] write ${KNOWLEDGE_DIR}/_index.md"
+  else
+    cat > "${KNOWLEDGE_DIR}/_index.md" <<'EOF'
 # Knowledge Index
 
 ## Projects
@@ -360,7 +367,8 @@ See [skills/skill-graph.md](skills/skill-graph.md) for the skill capability map.
 ## Decision Log
 See [decisions/log.md](decisions/log.md) for the strategic decision history.
 EOF
-  ok "Created: _index.md"
+    ok "Created: _index.md"
+  fi
 fi
 
 echo ""
