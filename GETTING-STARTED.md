@@ -49,6 +49,13 @@ are preserved. Private governance links can be placed in
 Codex Cloud may not see local files, so confirm retrieval instead of assuming
 that ChatGPT's custom instructions or private Pages automatically propagate.
 
+A portable `project-brain` skill now lives in `.agents/skills/project-brain/SKILL.md`
+and is copied into prepared project repos. For local user-global availability,
+run `python3 scripts/setup_codex_governance.py --board-url '<private Board URL>'`
+from the compound-brain checkout, then use `--check` to inspect status.
+Codex Cloud loads the checked-in repo skill, not your local user-home copy;
+private Board access still requires an authorized connected tool.
+
 ---
 
 ## How departments work
