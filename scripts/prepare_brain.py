@@ -32,7 +32,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
             "Prepare a static project brain by writing CLAUDE.md, .brain/, and "
-            ".codex/AGENTS.md without enabling repo-local autonomy."
+            "repo-root AGENTS.md (plus a legacy .codex/AGENTS.md copy) without enabling repo-local autonomy."
         )
     )
     parser.add_argument("project_dir", nargs="?", default=".", help="Repo path to prepare")
@@ -44,7 +44,7 @@ def main() -> int:
     prepare_brain(Path(args.project_dir))
     print("compound-brain prepare-brain complete")
     print(f"repo: {Path(args.project_dir).resolve()}")
-    print("created: CLAUDE.md, .brain/, .codex/AGENTS.md")
+    print("created: CLAUDE.md, .brain/, AGENTS.md, .codex/AGENTS.md (legacy)")
     print("next state: prepared")
     return 0
 
