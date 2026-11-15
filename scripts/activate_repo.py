@@ -179,7 +179,7 @@ def build_parser() -> argparse.ArgumentParser:
             "Lifecycle:\n"
             "  1. observe     detect repo, stack, docs, tests, and current surfaces\n"
             "  2. preview     cache a read-only global recommendation\n"
-            "  3. prepare     write CLAUDE.md, .brain, and .codex/AGENTS.md\n"
+            "  3. prepare     write CLAUDE.md, .brain, AGENTS.md and .codex/AGENTS.md (legacy)\n"
             "  4. activate    add repo-local .claude, departments, and runtime state"
         ),
     )
@@ -348,6 +348,7 @@ def main() -> int:
             not summary["has_brain"]
             or not (repo_root / "CLAUDE.md").exists()
             or not (repo_root / ".codex" / "AGENTS.md").exists()
+            or not (repo_root / "AGENTS.md").exists()
         ):
             prepare_brain(repo_root)
         approval_store = ApprovalStateStore(repo_root / ".brain" / "state")
