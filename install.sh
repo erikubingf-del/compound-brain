@@ -160,6 +160,7 @@ SCRIPTS=(
   "activate_repo.py"
   "architecture_radar.py"
   "bootstrap_codex_runtime.py"
+  "setup_codex_governance.py"
   "codex_runtime_bridge.py"
   "materialize_project_claude.py"
   "nightly_review.sh"
@@ -219,6 +220,14 @@ for template_file in "${REPO_DIR}/templates/project_codex/"*.md; do
   run "cp \"$template_file\" \"${CODEX_TEMPLATES_DIR}/${rel_path}\""
   ok "Installed Codex template: $rel_path"
 done
+
+# Install the portable skill as a fallback for scripts run from ~/.claude/scripts.
+PORTABLE_CODEX_SKILL="${REPO_DIR}/.agents/skills/project-brain/SKILL.md"
+if [[ -f "$PORTABLE_CODEX_SKILL" ]]; then
+  run "mkdir -p \"${CODEX_TEMPLATES_DIR}/skills/project-brain\""
+  run "cp \"$PORTABLE_CODEX_SKILL\" \"${CODEX_TEMPLATES_DIR}/skills/project-brain/SKILL.md\""
+  ok "Installed Codex Project Brain skill template"
+fi
 
 while IFS= read -r brain_file; do
   [[ -f "$brain_file" ]] || continue
@@ -302,7 +311,10 @@ fi
 
 # Decision log seed
 if [[ ! -f "${KNOWLEDGE_DIR}/decisions/log.md" ]]; then
-  cat > "${KNOWLEDGE_DIR}/decisions/log.md" <<'EOF'
+  if $DRY_RUN; then
+    echo "  [dry-run] write ${KNOWLEDGE_DIR}/decisions/log.md"
+  else
+    cat > "${KNOWLEDGE_DIR}/decisions/log.md" <<'EOF'
 # Decision Log
 
 > Every strategic decision that affects architecture, product direction, deployment,
@@ -325,12 +337,16 @@ if [[ ! -f "${KNOWLEDGE_DIR}/decisions/log.md" ]]; then
 ---
 
 EOF
-  ok "Created: decisions/log.md"
+    ok "Created: decisions/log.md"
+  fi
 fi
 
 # knowledge index
 if [[ ! -f "${KNOWLEDGE_DIR}/_index.md" ]]; then
-  cat > "${KNOWLEDGE_DIR}/_index.md" <<'EOF'
+  if $DRY_RUN; then
+    echo "  [dry-run] write ${KNOWLEDGE_DIR}/_index.md"
+  else
+    cat > "${KNOWLEDGE_DIR}/_index.md" <<'EOF'
 # Knowledge Index
 
 ## Projects
@@ -351,7 +367,8 @@ See [skills/skill-graph.md](skills/skill-graph.md) for the skill capability map.
 ## Decision Log
 See [decisions/log.md](decisions/log.md) for the strategic decision history.
 EOF
-  ok "Created: _index.md"
+    ok "Created: _index.md"
+  fi
 fi
 
 echo ""
@@ -451,6 +468,14 @@ if $DRY_RUN; then
   echo "  [dry-run] ${PYTHON_BIN} ${CODEX_BOOTSTRAP_SCRIPT}"
 else
   "${PYTHON_BIN}" "${CODEX_BOOTSTRAP_SCRIPT}" --repo-root "${REPO_DIR}" || warn "Codex bootstrap failed — review ~/.codex/AGENTS.md manually"
+fi
+
+echo ""
+echo "      Installing portable Project Brain for Codex..."
+if $DRY_RUN; then
+  echo "  [dry-run] ${PYTHON_BIN} ${REPO_DIR}/scripts/setup_codex_governance.py"
+else
+  "${PYTHON_BIN}" "${REPO_DIR}/scripts/setup_codex_governance.py" || warn "Codex Project Brain setup failed — run setup_codex_governance.py directly"
 fi
 
 # ─── Step 5: Project registry ────────────────────────────────────────────────

@@ -18,5 +18,8 @@ class PrepareBrainTests(unittest.TestCase):
             self.assertTrue((repo / "AGENTS.md").exists())
             self.assertIn("Codex Adapter", (repo / "AGENTS.md").read_text())
             self.assertIn("compound-brain codex adapter:begin", (repo / "AGENTS.md").read_text())
+            skill = repo / ".agents" / "skills" / "project-brain" / "SKILL.md"
+            self.assertTrue(skill.exists())
+            self.assertIn("name: project-brain", skill.read_text())
             self.assertFalse((repo / ".claude").exists())
 

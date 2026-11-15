@@ -3,6 +3,10 @@
 Codex discovers this adapter automatically when it is installed as the repository-root `AGENTS.md`.
 The copy at `.codex/AGENTS.md` is retained for compatibility, not relied upon for discovery.
 
+For substantial work, load the portable `project-brain` skill at
+`.agents/skills/project-brain/SKILL.md` when available. This is a repository
+skill, not proof of a private ChatGPT Board connection.
+
 For substantive project work, consult the relevant current records:
 - `CLAUDE.md` for the project contract and agreed objectives
 - `.brain/memory/project_context.md` and `.brain/memory/feedback_rules.md` when present

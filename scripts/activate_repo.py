@@ -349,6 +349,7 @@ def main() -> int:
             or not (repo_root / "CLAUDE.md").exists()
             or not (repo_root / ".codex" / "AGENTS.md").exists()
             or not (repo_root / "AGENTS.md").exists()
+            or not (repo_root / ".agents" / "skills" / "project-brain" / "SKILL.md").exists()
         ):
             prepare_brain(repo_root)
         approval_store = ApprovalStateStore(repo_root / ".brain" / "state")

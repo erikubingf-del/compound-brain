@@ -50,6 +50,7 @@ class ProjectMaterializationTests(unittest.TestCase):
 
             claude_md = (repo / "CLAUDE.md").read_text()
             self.assertIn("Existing Project Notes", claude_md)
+            self.assertTrue((repo / ".agents" / "skills" / "project-brain" / "SKILL.md").exists())
             self.assertIn("compound-brain managed block", claude_md)
             operations_md = (repo / ".claude" / "departments" / "operations.md").read_text()
             self.assertIn(".github/workflows", operations_md)
