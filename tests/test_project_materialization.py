@@ -63,7 +63,7 @@ class ProjectMaterializationTests(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             repo = Path(tmp)
             (repo / "AGENTS.md").write_text(
-                "# Human instructions\\n\\nKeep approved project goals unchanged.\\n"
+                "# Human instructions\n\nKeep approved project goals unchanged.\n"
             )
 
             materialize_codex_adapter(repo)
