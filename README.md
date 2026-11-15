@@ -112,6 +112,43 @@ Private governance-board links belong in a local
 Codex Cloud or remote runtimes may not have access to that local file; verify
 source retrieval before claiming cross-project governance was loaded.
 
+## Portable Project Brain for Codex Cloud and local Codex
+
+The repository ships a **portable Codex skill** at
+`.agents/skills/project-brain/SKILL.md`. Codex can discover this skill
+when the repository is checked out in either cloud or local Codex.
+`prepare-brain` also copies it into newly prepared project repositories,
+preserving any existing user-owned skill of the same name.
+
+For **local Codex across projects**, run this lightweight setup from an
+up-to-date compound-brain checkout. It changes only Codex instruction/skill
+files and does **not** install cron jobs, change permissions or activate repos:
+
+```bash
+python3 scripts/setup_codex_governance.py --board-url 'https://chatgpt.com/space/page_YOUR_PRIVATE_BOARD_ID'
+python3 scripts/setup_codex_governance.py --check
+```
+
+The URL is stored only in local `~/.codex/global-agent-governance.md`
+(mode 0600), not committed to GitHub. The script preserves existing global
+`~/.codex/AGENTS.md` instructions and unmanaged custom skills; repeated
+runs are idempotent. The pointer does **not** authenticate Codex to a private
+ChatGPT Page. To read that Page live, Codex must have an authorized connector
+or MCP server with actual access.
+
+For **Codex Cloud**, open a repository that contains its root `AGENTS.md`
+and `.agents/skills/project-brain/SKILL.md`. These checked-in instructions
+provide the same general Project Brain workflow; local user-home files do
+not automatically appear in cloud tasks. To extend coverage to another repo,
+prepare it with compound-brain and commit the resulting public-safe
+`AGENTS.md` and `.agents/skills/project-brain/` files after review.
+Do not copy private Board contents or credentials into a public repo.
+
+Smoke test in either environment: ask Codex to identify the active project's
+approved goal and its authoritative source, confirm whether the Project Brain
+skill was loaded, and state whether it actually retrieved the private Board.
+**"Skill found" is not equivalent to "private Board connected."**
+
 ## What activated repos become
 
 An activated repo is treated like a small company run by a bounded
