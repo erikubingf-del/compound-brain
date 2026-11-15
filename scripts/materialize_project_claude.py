@@ -14,6 +14,8 @@ except ModuleNotFoundError:
 
 TEMPLATE_ROOT = Path(__file__).resolve().parents[1] / "templates" / "project_claude"
 CODEX_TEMPLATE_ROOT = Path(__file__).resolve().parents[1] / "templates" / "project_codex"
+CODEX_SKILL_SOURCE = Path(__file__).resolve().parents[1] / ".agents" / "skills" / "project-brain" / "SKILL.md"
+CODEX_SKILL_MANAGED_MARKER = "<!-- compound-brain managed portable skill -->"
 MANAGED_BLOCK_START = "<!-- compound-brain managed block:begin -->"
 MANAGED_BLOCK_END = "<!-- compound-brain managed block:end -->"
 CODEX_MANAGED_BLOCK_START = "<!-- compound-brain codex adapter:begin -->"
@@ -112,9 +114,31 @@ def materialize_codex_adapter(repo: Path) -> None:
     root_agents_path.write_text(merge_codex_managed_block(existing, rendered))
 
 
+def materialize_codex_project_brain_skill(repo: Path) -> bool:
+    """Copy the portable skill without overwriting user-owned custom skills."""
+    candidates = (
+        CODEX_SKILL_SOURCE,
+        CODEX_TEMPLATE_ROOT / "skills" / "project-brain" / "SKILL.md",
+    )
+    source = next((path for path in candidates if path.is_file()), None)
+    if source is None:
+        return False
+
+    target = repo / ".agents" / "skills" / "project-brain" / "SKILL.md"
+    if target.resolve() == source.resolve():
+        return True
+    if target.exists() and CODEX_SKILL_MANAGED_MARKER not in target.read_text():
+        return False
+
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(source.read_text())
+    return True
+
+
 def materialize_prepared_project(repo: Path) -> None:
     write_project_claude_md(repo, activation_mode="prepared")
     materialize_codex_adapter(repo)
+    materialize_codex_project_brain_skill(repo)
 
 
 def materialize_autoresearch_placeholder(repo: Path) -> None:
