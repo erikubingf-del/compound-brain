@@ -30,5 +30,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Validate installer shell syntax
+        run: bash -n install.sh
       - name: Verify Codex discovery and instruction preservation
         run: python3 -m unittest tests.test_codex_bootstrap tests.test_prepare_brain tests.test_project_materialization tests.test_codex_governance tests.test_install_dry_run
