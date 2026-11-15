@@ -27,7 +27,7 @@ class CodexBootstrapTests(unittest.TestCase):
             claude_home = Path(tmp) / ".claude"
             codex_home.mkdir()
             agents = codex_home / "AGENTS.md"
-            agents.write_text("# Personal rules\\n\\nKeep my project objectives.\\n")
+            agents.write_text("# Personal rules\n\nKeep my project objectives.\n")
 
             apply_managed_codex_block(agents, claude_home)
             first = agents.read_text()
