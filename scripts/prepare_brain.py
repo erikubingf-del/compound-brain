@@ -44,7 +44,7 @@ def main() -> int:
     prepare_brain(Path(args.project_dir))
     print("compound-brain prepare-brain complete")
     print(f"repo: {Path(args.project_dir).resolve()}")
-    print("created: CLAUDE.md, .brain/, AGENTS.md, .codex/AGENTS.md (legacy)")
+    print("created: CLAUDE.md, .brain/, AGENTS.md, .codex/AGENTS.md (legacy), and Project Brain skill when available")
     print("next state: prepared")
     return 0
 
