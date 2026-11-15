@@ -2,7 +2,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 
-from scripts.materialize_project_claude import materialize_project_claude
+from scripts.materialize_project_claude import materialize_codex_adapter, materialize_project_claude
 from scripts.lib.repo_profile import build_department_surfaces
 
 
@@ -58,3 +58,24 @@ class ProjectMaterializationTests(unittest.TestCase):
                 operations_md,
                 (repo / ".claude" / "departments" / "engineering.md").read_text(),
             )
+
+    def test_codex_root_adapter_preserves_human_rules_and_is_idempotent(self) -> None:
+        with TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            (repo / "AGENTS.md").write_text(
+                "# Human instructions\n\nKeep approved project goals unchanged.\n"
+            )
+
+            materialize_codex_adapter(repo)
+            first = (repo / "AGENTS.md").read_text()
+            legacy = (repo / ".codex" / "AGENTS.md").read_text()
+
+            self.assertIn("Human instructions", first)
+            self.assertIn("Keep approved project goals unchanged.", first)
+            self.assertIn("Codex Adapter", first)
+            self.assertIn("CLAUDE.md", legacy)
+            self.assertEqual(first.count("<!-- compound-brain codex adapter:begin -->"), 1)
+
+            materialize_codex_adapter(repo)
+            self.assertEqual((repo / "AGENTS.md").read_text(), first)
+            self.assertEqual((repo / ".codex" / "AGENTS.md").read_text(), legacy)

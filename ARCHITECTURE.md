@@ -51,7 +51,8 @@ Mutation rule:
 Prepared repo:
 - `CLAUDE.md`
 - `.brain/`
-- `.codex/AGENTS.md`
+- `AGENTS.md` (Codex auto-discovered, managed section preserves human rules)
+- `.codex/AGENTS.md` (legacy compatibility copy)
 
 Activated repo adds:
 - `.claude/settings.local.json`
@@ -74,7 +75,9 @@ Activated repos use one canonical local control plane:
 - `.brain/`
 - `.claude/`
 
-Codex reads the same surfaces through `.codex/AGENTS.md`. It must not create a
+Codex reads the same surfaces through repo-root `AGENTS.md` and local global
+`~/.codex/AGENTS.md` when present. The `.codex/AGENTS.md` copy is not the
+repo-root discovery entry point. It must not create a
 parallel repo runtime. The managed bootstrap now routes activated repos through
 `~/.claude/scripts/codex_runtime_bridge.py`, which reuses fresh runtime state
 when possible and falls back to the same `session-start` event engine Claude

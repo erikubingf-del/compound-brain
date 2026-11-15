@@ -1,0 +1,30 @@
+name: Codex adapter regression
+
+on:
+  pull_request:
+    paths:
+      - 'AGENTS.md'
+      - 'templates/project_codex/**'
+      - 'scripts/materialize_project_claude.py'
+      - 'scripts/prepare_brain.py'
+      - 'scripts/activate_repo.py'
+      - 'scripts/lib/codex_bootstrap.py'
+      - 'tests/test_codex_bootstrap.py'
+      - 'tests/test_prepare_brain.py'
+      - 'tests/test_project_materialization.py'
+      - '.github/workflows/codex-adapter-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  codex-adapter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify Codex discovery and instruction preservation
+        run: python3 -m unittest tests.test_codex_bootstrap tests.test_prepare_brain tests.test_project_materialization
