@@ -4,6 +4,10 @@ on:
   pull_request:
     paths:
       - 'AGENTS.md'
+      - '.agents/skills/project-brain/**'
+      - 'scripts/setup_codex_governance.py'
+      - 'tests/test_codex_governance.py'
+      - 'install.sh'
       - 'templates/project_codex/**'
       - 'scripts/materialize_project_claude.py'
       - 'scripts/prepare_brain.py'
@@ -27,4 +31,4 @@ jobs:
         with:
           python-version: '3.12'
       - name: Verify Codex discovery and instruction preservation
-        run: python3 -m unittest tests.test_codex_bootstrap tests.test_prepare_brain tests.test_project_materialization
+        run: python3 -m unittest tests.test_codex_bootstrap tests.test_prepare_brain tests.test_project_materialization tests.test_codex_governance
