@@ -15,7 +15,9 @@ After running `activate_repo.py` on your repo, four things are live:
 
 ```
 your-repo/
-├── CLAUDE.md                        ← instructions loaded by Claude Code / Codex
+├── CLAUDE.md                        ← canonical project contract
+├── AGENTS.md                        ← Codex auto-discovered repo instructions
+├── .codex/AGENTS.md                 ← legacy compatibility copy
 ├── .brain/
 │   ├── memory/
 │   │   ├── project_context.md       ← goal, stack, current state (edit this)
@@ -33,6 +35,19 @@ your-repo/
     ├── hooks/                       ← session-start, stop, cron wiring
     └── settings.local.json          ← tool permissions
 ```
+
+---
+
+## Codex setup and governance
+
+The installer creates a global managed block in `~/.codex/AGENTS.md`, and
+`prepare-brain` creates the **repository-root** `AGENTS.md` that Codex
+auto-discovers. The old `.codex/AGENTS.md` remains as a compatibility copy.
+When refreshing a repo, existing human instructions in root `AGENTS.md`
+are preserved. Private governance links can be placed in
+`~/.codex/global-agent-governance.md`; never commit them to a public repo.
+Codex Cloud may not see local files, so confirm retrieval instead of assuming
+that ChatGPT's custom instructions or private Pages automatically propagate.
 
 ---
 
