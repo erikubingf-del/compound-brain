@@ -31,4 +31,4 @@ jobs:
         with:
           python-version: '3.12'
       - name: Verify Codex discovery and instruction preservation
-        run: python3 -m unittest tests.test_codex_bootstrap tests.test_prepare_brain tests.test_project_materialization tests.test_codex_governance
+        run: python3 -m unittest tests.test_codex_bootstrap tests.test_prepare_brain tests.test_project_materialization tests.test_codex_governance tests.test_install_dry_run
