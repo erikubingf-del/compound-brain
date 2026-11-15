@@ -52,7 +52,7 @@ Repos then move through a strict lifecycle:
 
 1. `observe` — detect the repo, read it, do not write repo files
 2. `preview` — store a global read-only recommendation
-3. `prepare-brain` — write `CLAUDE.md`, `.brain/`, and `.codex/AGENTS.md`
+3. `prepare-brain` — write `CLAUDE.md`, `.brain/`, repo-root `AGENTS.md` (plus legacy `.codex/AGENTS.md`)
 4. `activate-repo` — add `.claude/`, departments, approvals, hooks, crons, and
    bounded autonomy
 
@@ -95,11 +95,22 @@ same proposal surface back into repo-local skill shopping.
 - Repo runtime in `.claude/`
   - created only after activation
   - department contracts, local settings, hook wrappers
-- Codex adapter in `.codex/AGENTS.md`
+- Codex adapter in repo-root `AGENTS.md` (legacy copy at `.codex/AGENTS.md`)
   - reads the same repo control plane as Claude
   - uses `~/.claude/scripts/codex_runtime_bridge.py` to wake the same runtime
   - uses managed Codex Automations for recurring heartbeats and skill-radar refresh
   - does not create a second repo runtime
+
+
+Codex discovers `AGENTS.md` in the repository root and its parent directories, plus
+`~/.codex/AGENTS.md` for local global instructions. A file stored only at
+`.codex/AGENTS.md` is not a reliable repo-root entry point. After updating the
+installer, rerun `python3 scripts/bootstrap_codex_runtime.py --repo-root .`
+and `python3 scripts/prepare_brain.py /path/to/your/project` to refresh both.
+Private governance-board links belong in a local
+`~/.codex/global-agent-governance.md` file, **not** in this public repository.
+Codex Cloud or remote runtimes may not have access to that local file; verify
+source retrieval before claiming cross-project governance was loaded.
 
 ## What activated repos become
 
@@ -176,7 +187,7 @@ python3 ~/.claude/scripts/activate_repo.py --project-dir /path/to/repo --check-o
 
 # Step 2 — prepare (writes .brain/ + CLAUDE.md, no autonomy yet)
 python3 ~/.claude/scripts/prepare_brain.py /path/to/repo
-# Creates .brain/memory/, .brain/knowledge/, CLAUDE.md, .codex/AGENTS.md
+# Creates .brain/memory/, .brain/knowledge/, CLAUDE.md, AGENTS.md and legacy .codex/AGENTS.md
 # Safe to commit to git
 
 # Step 3 — activate (adds .claude/, departments, hooks, autonomy-depth state)
@@ -200,7 +211,8 @@ once activated, see [`GETTING-STARTED.md`](GETTING-STARTED.md).
 `prepare-brain` writes:
 - `CLAUDE.md`
 - `.brain/`
-- `.codex/AGENTS.md`
+- `AGENTS.md` (Codex auto-discovers at repo root; existing human instructions preserved)
+- `.codex/AGENTS.md` (legacy compatibility copy)
 
 `activate-repo` adds:
 - `.claude/settings.local.json`
