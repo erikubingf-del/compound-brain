@@ -15,3 +15,10 @@ Routines claim a row at start (Status → in_progress, Claimed By → routine na
 | 009 | Verify the plugin loads in a real routine/cloud session | pending | high | — | MUST pass before deleting `.claude/skills/`. Deleting first turns the weekly run into a silent no-op with no error |
 | 010 | Delete `.claude/skills/` once 009 passes | blocked-by-009 | medium | — | Separate commit. Superseded by `plugins/compound-brain/skills/` |
 | 011 | Keep the Bash allowlist narrow | pending | high | — | The Write/Edit denies do not cover shell writes; the boundary holds only because Bash is limited to git/ls/mkdir. Re-check before adding any Bash rule |
+| 012 | Weekly LLM architecture digest 2026-11-16 | done | high | weekly-digest | Digest at knowledge/research/2026-11-16-llm-architecture-digest.md |
+| 013 | Audit brain skills for Task tool usage | pending | high | — | TaskCreate/TaskUpdate/TodoWrite removed on Sonnet 5+/Fable 5+; grep .claude/ plugins/ .brain/ — no code writes needed for audit |
+| 014 | Run /skill-doctor on compound-brain plugin | pending | medium | — | Identifies dead-weight skills inflating context; read-only; attended session |
+| 015 | Draft eval suite for brain-digest skill via claude plugin eval | pending | medium | — | SAFE — markdown writes under .brain/; `claude plugin eval init` drafts cases |
+| 016 | Add permissions.denyInsteadOfPrompting to routine settings | pending | medium | — | NEEDS APPROVAL — settings file change; prevents unattended runs from hanging on blocked tool calls |
+| 017 | Audit injected context layer size | pending | low | — | Ensure .brain memory files loaded at session start are under ~2k tokens each; SAFE read-only audit |
+| 018 | Design dreaming pass for .brain memory consolidation | pending | low | — | Write spec as knowledge/resources/dreaming-pass-spec.md (SAFE); implementing as cron NEEDS APPROVAL |
