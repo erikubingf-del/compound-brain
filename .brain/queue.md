@@ -15,3 +15,8 @@ Routines claim a row at start (Status → in_progress, Claimed By → routine na
 | 009 | Verify the plugin loads in a real routine/cloud session | pending | high | — | MUST pass before deleting `.claude/skills/`. Deleting first turns the weekly run into a silent no-op with no error |
 | 010 | Delete `.claude/skills/` once 009 passes | blocked-by-009 | medium | — | Separate commit. Superseded by `plugins/compound-brain/skills/` |
 | 011 | Keep the Bash allowlist narrow | pending | high | — | The Write/Edit denies do not cover shell writes; the boundary holds only because Bash is limited to git/ls/mkdir. Re-check before adding any Bash rule |
+| 012 | Run `claude plugin eval` on compound-brain plugin | pending | high | — | Addresses queue 009; `claude plugin eval init` drafts test cases; NEEDS APPROVAL — touches plugin files |
+| 013 | Audit hooks for PreModelSwitch/PostModelSwitch | pending | medium | — | New hook events (w36) can block bad model switches or inject context; NEEDS APPROVAL — touches .claude/hooks/ |
+| 014 | Set `promptCacheTtl: "1h"` in settings | pending | medium | — | Reduces cost for multi-turn research sessions; NEEDS APPROVAL — touches .claude/settings.json |
+| 015 | Draft retrieval-config.md spec | done | low | weekly-digest | Created knowledge/resources/retrieval-config.md 2026-11-23; tracks current 4-lane retrieval heuristics and re-evaluation triggers |
+| 016 | Upgrade AGENTS.md learnings to diagnostic-trace format | pending | low | — | Per D²ACCI pattern: add "what failed / inconclusive" section; shifts from results-only to traceable audit log; SAFE markdown edit |
